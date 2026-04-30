@@ -1,0 +1,26 @@
+{
+  "@@locale": "en",
+  "appName": "Umusaruro P2P",
+  "offlineBanner": "You are offline — showing last saved data.",
+  "loginTitle": "Welcome Back",
+  "phoneHint": "Phone Number",
+  "sendOtp": "Send OTP",
+  "otpTitle": "Enter OTP",
+  "otpSubtitle": "Enter the 6-digit code sent to {phone}",
+  "@otpSubtitle": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "resendOtp": "Resend OTP",
+  "register": "Create Account",
+  "investNow": "Invest Now",
+  "needInternetInvest": "You need internet to invest",
+  "needInternetMessages": "You need internet to send messages",
+  "needInternetPayment": "You need internet for payments",
+  "needInternetHarvest": "You need internet to submit harvest",
+  "pullToRefresh": "Pull to refresh",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "submit": "Submit",
+  "save": "Save",
+  "logout": "Logout"
+}

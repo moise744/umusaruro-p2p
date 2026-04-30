@@ -1,0 +1,95 @@
+name: umusaruro_p2p
+description: "Umusaruro P2P Agricultural Investment Platform"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+  flutter: ">=3.29.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.9
+
+  # ─── State Management ───────────────────────────────────────────────────────
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
+
+  # ─── Navigation ─────────────────────────────────────────────────────────────
+  go_router: ^17.2.2
+
+  # ─── Networking ─────────────────────────────────────────────────────────────
+  dio: ^5.9.2
+  connectivity_plus: ^7.1.1
+
+  # ─── Local Storage ──────────────────────────────────────────────────────────
+  hive_flutter: ^1.1.0
+  sqflite: ^2.4.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # ─── Secure Storage ─────────────────────────────────────────────────────────
+  flutter_secure_storage: ^10.0.0
+
+  # ─── Firebase ───────────────────────────────────────────────────────────────
+  firebase_core: ^4.7.0
+  firebase_messaging: ^16.2.0
+
+  # ─── Images ─────────────────────────────────────────────────────────────────
+  image_picker: ^1.2.2
+  cached_network_image: ^3.4.1
+  flutter_image_compress: ^2.4.0
+
+  # ─── Localisation ───────────────────────────────────────────────────────────
+  intl: ^0.20.2
+
+  # ─── UI Utilities ───────────────────────────────────────────────────────────
+  shimmer: ^3.0.0
+  pin_code_fields: ^9.3.0
+  percent_indicator: ^4.2.5
+  flutter_pdfview: ^1.4.4
+
+  # ─── Models / Serialisation ─────────────────────────────────────────────────
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+
+  # ─── Permissions ────────────────────────────────────────────────────────────
+  permission_handler: ^12.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # ─── Code Generation ────────────────────────────────────────────────────────
+  riverpod_generator: ^3.0.3
+  build_runner: ^2.4.14
+  freezed: ^3.2.3
+  json_serializable: 6.11.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/l10n/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

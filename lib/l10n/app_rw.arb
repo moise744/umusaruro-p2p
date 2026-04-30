@@ -1,0 +1,26 @@
+{
+  "@@locale": "rw",
+  "appName": "Umusaruro P2P",
+  "offlineBanner": "Nta murongo — ureba amakuru ya nyuma abitswe.",
+  "loginTitle": "Murakaza neza",
+  "phoneHint": "Nimero ya telefone",
+  "sendOtp": "Ohereza OTP",
+  "otpTitle": "Injiza OTP",
+  "otpSubtitle": "Injiza inimero 6 yoherejwe kuri {phone}",
+  "@otpSubtitle": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "resendOtp": "Ongera uhereze OTP",
+  "register": "Fungura konti",
+  "investNow": "Tanga Ishoramari",
+  "needInternetInvest": "Ukeneye internet gushora",
+  "needInternetMessages": "Ukeneye internet kohereza ubutumwa",
+  "needInternetPayment": "Ukeneye internet kwishyura",
+  "needInternetHarvest": "Ukeneye internet kohereza ivuna",
+  "pullToRefresh": "Kurura kuvugurura",
+  "retry": "Ongera ugerageze",
+  "cancel": "Reka",
+  "submit": "Ohereza",
+  "save": "Bika",
+  "logout": "Sohoka"
+}
