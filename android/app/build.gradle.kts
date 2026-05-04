@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "rw.umusaruro.umusaruro_p2p"
-        minSdk = 23                  // Android 6.0 — matches your docs
+        minSdk = flutter.minSdkVersion                  // Android 6.0 — matches your docs
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

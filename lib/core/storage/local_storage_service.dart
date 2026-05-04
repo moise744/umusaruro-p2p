@@ -1,0 +1,68 @@
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:umusaruro_p2p/core/constants/app_constants.dart';
+import 'package:flutter/foundation.dart';
+
+/// LocalStorageService handles local data persistence using Hive
+class LocalStorageService {
+  static const String _boxName = 'umusaruro_box';
+  late Box<dynamic> _box;
+
+  /// Initialize Hive and open the box
+  Future<void> init() async {
+    try {
+      // Set Hive directory to app documents
+      final appDir = await getApplicationDocumentsDirectory();
+      Hive.init(appDir.path);
+
+      // Open the box
+      _box = await Hive.openBox(_boxName);
+    } catch (e) {
+      debugPrint('Error initializing LocalStorageService: $e');
+      rethrow;
+    }
+  }
+
+  /// Save a value
+  Future<void> save(String key, dynamic value) async {
+    await _box.put(key, value);
+  }
+
+  /// Get a value
+  T? get<T>(String key, {T? defaultValue}) {
+    try {
+      return _box.get(key, defaultValue: defaultValue) as T?;
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+
+  /// Delete a value
+  Future<void> delete(String key) async {
+    await _box.delete(key);
+  }
+
+  /// Clear all data
+  Future<void> clear() async {
+    await _box.clear();
+  }
+
+  /// Check if key exists
+  bool exists(String key) {
+    return _box.containsKey(key);
+  }
+
+  bool isOnboardingDone() {
+    return _box.get(AppConstants.onboardingDoneKey, defaultValue: false)
+        as bool;
+  }
+
+  Future<void> setOnboardingDone() async {
+    await _box.put(AppConstants.onboardingDoneKey, true);
+  }
+
+  /// Get box
+  Box<dynamic> getBox() {
+    return _box;
+  }
+}
