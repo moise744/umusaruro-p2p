@@ -21,6 +21,11 @@ import 'package:umusaruro_p2p/features/notifications/presentation/screens/notifi
 import 'package:umusaruro_p2p/features/messages/presentation/screens/messages_screen.dart';
 import 'package:umusaruro_p2p/features/profile/presentation/screens/profile_screen.dart';
 
+import 'package:umusaruro_p2p/features/farmer/presentation/screens/project_detail_screen.dart';
+import 'package:umusaruro_p2p/features/farmer/presentation/screens/harvest_submit_screen.dart';
+import 'package:umusaruro_p2p/features/investor/presentation/screens/invest_flow_screen.dart';
+import 'package:umusaruro_p2p/core/mock/mock_data.dart';
+import 'package:umusaruro_p2p/core/screens/transactions_screen.dart';
 part 'app_router.g.dart';
 
 @riverpod
@@ -116,6 +121,44 @@ GoRouter appRouter(Ref ref) {
         path: AppRoutes.notifications,
         builder: (context, state) => const NotificationsScreen(),
       ),
+
+      // ── Project Detail (farmer & investor), Invest/Harvest flows, Transactions ──
+      GoRoute(
+        path: '/farmer/projects/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ProjectDetailScreen(projectId: id, isInvestorView: false);
+        },
+      ),
+      GoRoute(
+        path: '/investor/projects/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ProjectDetailScreen(projectId: id, isInvestorView: true);
+        },
+      ),
+      GoRoute(
+        path: '/investor/projects/:id/invest',
+        builder: (context, state) {
+          final project = state.extra as MockProject;
+          return InvestFlowScreen(project: project);
+        },
+      ),
+      GoRoute(
+        path: '/farmer/projects/:id/harvest',
+        builder: (context, state) {
+          final project = state.extra as MockProject;
+          return HarvestSubmitScreen(project: project);
+        },
+      ),
+      GoRoute(
+        path: '/farmer/transactions',
+        builder: (context, state) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/investor/transactions',
+        builder: (context, state) => const TransactionsScreen(),
+      ),
     ],
   );
 }
@@ -171,12 +214,16 @@ class FarmerShell extends StatelessWidget {
     switch (index) {
       case 0:
         context.go(AppRoutes.farmerHome);
+        return;
       case 1:
         context.go(AppRoutes.myProjects);
+        return;
       case 2:
         context.go(AppRoutes.messages);
+        return;
       case 3:
         context.go(AppRoutes.profile);
+        return;
     }
   }
 }
@@ -236,14 +283,19 @@ class InvestorShell extends StatelessWidget {
     switch (index) {
       case 0:
         context.go(AppRoutes.investorHome);
+        return;
       case 1:
         context.go(AppRoutes.browseProjects);
+        return;
       case 2:
         context.go(AppRoutes.portfolio);
+        return;
       case 3:
         context.go(AppRoutes.messages);
+        return;
       case 4:
         context.go(AppRoutes.profile);
+        return;
     }
   }
 }
@@ -293,12 +345,16 @@ class CellLeaderShell extends StatelessWidget {
     switch (index) {
       case 0:
         context.go(AppRoutes.cellLeaderHome);
+        return;
       case 1:
         context.go(AppRoutes.verificationHistory);
+        return;
       case 2:
         context.go(AppRoutes.messages);
+        return;
       case 3:
         context.go(AppRoutes.profile);
+        return;
     }
   }
 }
