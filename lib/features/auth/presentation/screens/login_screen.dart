@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/constants/app_routes.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
 import 'package:umusaruro_p2p/core/widgets/app_text_field.dart';
 
-// Simple state for login form
+
 class _LoginState {
   final bool isLoading;
   final String? error;
@@ -19,12 +20,19 @@ class _LoginNotifier extends Notifier<_LoginState> {
   @override
   _LoginState build() => const _LoginState();
 
-  Future<void> sendOtp(String phone, BuildContext context) async {
+  Future<void> sendOtp(
+    String phone,
+    String role,
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     state = const _LoginState(isLoading: true, error: null);
     try {
-      await Future.delayed(
-        const Duration(seconds: 1),
-      ); // replace with real API call
+      await Future.delayed(const Duration(seconds: 1));
+
+      final secureStorage = ref.read(secureStorageServiceProvider);
+      await secureStorage.saveRole(role);
+
       state = const _LoginState(error: null);
       if (context.mounted) {
         context.push(AppRoutes.otp, extra: phone);
@@ -36,7 +44,7 @@ class _LoginNotifier extends Notifier<_LoginState> {
       );
     }
   }
-}
+} // ← closes _LoginNotifier
 
 final _loginProvider = NotifierProvider<_LoginNotifier, _LoginState>(
   _LoginNotifier.new,
@@ -63,7 +71,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _onSendOtp() {
     if (!_formKey.currentState!.validate()) return;
     final phone = '+250${_phoneController.text.trim()}';
-    ref.read(_loginProvider.notifier).sendOtp(phone, context);
+    ref
+        .read(_loginProvider.notifier)
+        .sendOtp(phone, _selectedRole, context, ref);
   }
 
   @override
@@ -82,7 +92,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const SizedBox(height: 32),
 
-                // Logo
                 Center(
                   child: Container(
                     width: 72,
@@ -110,7 +119,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Role selector
                 const Text('I am a', style: AppTextStyles.labelLarge),
                 const SizedBox(height: 10),
                 Row(
@@ -140,7 +148,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Phone number field
                 AppTextField(
                   label: 'Phone Number',
                   hint: '078 000 0000',
@@ -196,7 +203,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Register link
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

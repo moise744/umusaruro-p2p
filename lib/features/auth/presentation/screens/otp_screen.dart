@@ -79,9 +79,22 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (otp == '123456') {
       final secureStorage = ref.read(secureStorageServiceProvider);
       await secureStorage.saveToken('mock_jwt_token');
-      await secureStorage.saveRole('farmer'); // role comes from API response
 
-      if (mounted) context.go(AppRoutes.farmerHome);
+      // In real app, role comes from API response
+      // For now read the role that was selected on login screen
+      // We need to pass it through — see FIX 2 below
+      final role = await secureStorage.getRole();
+
+      if (mounted) {
+        switch (role) {
+          case 'investor':
+            context.go(AppRoutes.investorHome);
+          case 'cell_leader':
+            context.go(AppRoutes.cellLeaderHome);
+          default:
+            context.go(AppRoutes.farmerHome);
+        }
+      }
     } else {
       setState(
         () =>
