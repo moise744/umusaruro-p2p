@@ -39,7 +39,7 @@ const _pages = [
   _OnboardingPage(
     title: 'Community Verified',
     subtitle:
-        'Every project is verified by your local Cell Leader to ensure trust and transparency.',
+        'Every project is reviewed before it is shown to investors to ensure trust and transparency.',
     icon: Icons.verified_user,
     iconColor: AppColors.info,
   ),

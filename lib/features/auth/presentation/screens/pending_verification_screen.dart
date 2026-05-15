@@ -39,7 +39,7 @@ class PendingVerificationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Your profile has been submitted. Your local Cell Leader will verify your details within 24â€“48 hours.',
+                'Your profile has been submitted. Our team will verify your details within 24-48 hours.',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.textSecondary,
                 ),

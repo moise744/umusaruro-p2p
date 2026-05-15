@@ -203,7 +203,7 @@ final mockNotifications = [
   const MockNotification(
     id: '3',
     title: 'Profile Verified',
-    body: 'Your farmer profile has been verified by the Cell Leader.',
+    body: 'Your farmer profile has been verified by the review team.',
     time: '3 days ago',
     isRead: true,
     type: 'verification',

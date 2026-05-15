@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
+import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
 import 'package:umusaruro_p2p/core/widgets/status_badge.dart';
-import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
   final String projectId;
@@ -21,344 +22,375 @@ class ProjectDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final project = mockProjects.firstWhere(
-      (p) => p.id == projectId,
-      orElse: () => mockProjects.first,
-    );
+    final projectFuture = ref
+        .read(projectApiServiceProvider)
+        .getProjectById(projectId);
 
-    ProjectStatus status;
-    switch (project.status) {
-      case 'active':
-        status = ProjectStatus.active;
-      case 'completed':
-        status = ProjectStatus.completed;
-      case 'rejected':
-        status = ProjectStatus.rejected;
-      default:
-        status = ProjectStatus.pending;
-    }
+    return FutureBuilder<MockProject>(
+      future: projectFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: OfflineBanner(
-        child: CustomScrollView(
-          slivers: [
-            // Hero header
-            SliverAppBar(
-              expandedHeight: 220,
-              pinned: true,
-              backgroundColor: AppColors.primary,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
-              actions: [
-                if (!isInvestorView)
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.share_outlined, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.primaryDark, AppColors.primary],
-                    ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 40),
-                        Icon(project.imageIcon, size: 72, color: Colors.white),
-                        Text(
-                          project.cropType,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  snapshot.error?.toString() ?? 'Unable to load project.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
                   ),
                 ),
               ),
             ),
+          );
+        }
 
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title + status
-                    Row(
+        final project = snapshot.data!;
+        final status = _projectStatus(project.status);
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: OfflineBanner(
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 220,
+                  pinned: true,
+                  backgroundColor: AppColors.primary,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => context.pop(),
+                  ),
+                  actions: [
+                    if (!isInvestorView)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {},
+                      ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.share_outlined,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {},
+                    ),
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.primaryDark, AppColors.primary],
+                        ),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 40),
+                            Icon(
+                              project.imageIcon,
+                              size: 72,
+                              color: Colors.white,
+                            ),
+                            Text(
+                              project.cropType,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            project.title,
-                            style: AppTextStyles.displayMedium,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                project.title,
+                                style: AppTextStyles.displayMedium,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            StatusBadge(status: status),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const CircleAvatar(
+                              radius: 14,
+                              backgroundColor: AppColors.primary,
+                              child: Icon(
+                                Icons.person,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              project.farmerName,
+                              style: AppTextStyles.labelLarge,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '· Verified Farmer',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                project.location,
+                                style: AppTextStyles.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(13),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        StatusBadge(status: status),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Farmer info
-                    Row(
-                      children: [
-                        const CircleAvatar(
-                          radius: 14,
-                          backgroundColor: AppColors.primary,
-                          child: Icon(
-                            Icons.person,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          project.farmerName,
-                          style: AppTextStyles.labelLarge,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· Verified Farmer',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.success,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(project.location, style: AppTextStyles.bodySmall),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Funding progress card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(13),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Raised',
-                                    style: AppTextStyles.caption,
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Raised',
+                                        style: AppTextStyles.caption,
+                                      ),
+                                      Text(
+                                        project.formattedRaised,
+                                        style: AppTextStyles.headingMedium
+                                            .copyWith(color: AppColors.primary),
+                                      ),
+                                    ],
                                   ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const Text(
+                                        'Target',
+                                        style: AppTextStyles.caption,
+                                      ),
+                                      Text(
+                                        project.formattedTarget,
+                                        style: AppTextStyles.headingMedium,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              LinearPercentIndicator(
+                                lineHeight: 10,
+                                percent: project.fundingPercent,
+                                backgroundColor: AppColors.divider,
+                                progressColor: AppColors.primary,
+                                barRadius: const Radius.circular(5),
+                                padding: EdgeInsets.zero,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
                                   Text(
-                                    project.formattedRaised,
-                                    style: AppTextStyles.headingMedium.copyWith(
+                                    '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
+                                    style: AppTextStyles.labelMedium.copyWith(
                                       color: AppColors.primary,
                                     ),
                                   ),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    'Target',
+                                  Text(
+                                    '${project.durationMonths} months duration',
                                     style: AppTextStyles.caption,
                                   ),
-                                  Text(
-                                    project.formattedTarget,
-                                    style: AppTextStyles.headingMedium,
-                                  ),
                                 ],
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          LinearPercentIndicator(
-                            lineHeight: 10,
-                            percent: project.fundingPercent,
-                            backgroundColor: AppColors.divider,
-                            progressColor: AppColors.primary,
-                            barRadius: const Radius.circular(5),
-                            padding: EdgeInsets.zero,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            _StatBox(
+                              label: 'Return Rate',
+                              value: '${project.returnRate}%',
+                              icon: Icons.percent,
+                              color: AppColors.secondary,
+                            ),
+                            const SizedBox(width: 10),
+                            _StatBox(
+                              label: 'Duration',
+                              value: '${project.durationMonths} months',
+                              icon: Icons.calendar_today,
+                              color: AppColors.info,
+                            ),
+                            const SizedBox(width: 10),
+                            const _StatBox(
+                              label: 'Investors',
+                              value: '14',
+                              icon: Icons.people_outline,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'About This Project',
+                          style: AppTextStyles.headingSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'This project focuses on ${project.cropType.toLowerCase()} cultivation in ${project.location}. '
+                          'Funds will be used for seeds, fertilizers, irrigation equipment, and labor costs for the '
+                          '${project.durationMonths}-month growing season.',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                            height: 1.6,
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Project Timeline',
+                          style: AppTextStyles.headingSmall,
+                        ),
+                        const SizedBox(height: 12),
+                        _TimelineTile(
+                          label: 'Funding Phase',
+                          detail: 'Collecting investments from backers',
+                          isCompleted: project.fundingPercent > 0,
+                          isActive: project.status == 'active',
+                        ),
+                        _TimelineTile(
+                          label: 'Planting Phase',
+                          detail: 'Seeds planted and growing begins',
+                          isCompleted: project.fundingPercent >= 1,
+                          isActive: false,
+                        ),
+                        const _TimelineTile(
+                          label: 'Growing Phase',
+                          detail: 'Crops monitored by the review team',
+                          isCompleted: false,
+                          isActive: false,
+                        ),
+                        _TimelineTile(
+                          label: 'Harvest & Returns',
+                          detail: 'Harvest certified — investors paid',
+                          isCompleted: project.status == 'completed',
+                          isActive: false,
+                          isLast: true,
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.statusActive,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  color: AppColors.primary,
-                                ),
+                              const Icon(
+                                Icons.verified_user,
+                                color: AppColors.success,
+                                size: 20,
                               ),
-                              Text(
-                                '${project.durationMonths} months duration',
-                                style: AppTextStyles.caption,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Verified',
+                                      style: AppTextStyles.labelLarge.copyWith(
+                                        color: AppColors.success,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'Approved on Mar 10, 2026',
+                                      style: AppTextStyles.caption,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Key stats
-                    Row(
-                      children: [
-                        _StatBox(
-                          label: 'Return Rate',
-                          value: '${project.returnRate}%',
-                          icon: Icons.percent,
-                          color: AppColors.secondary,
                         ),
-                        const SizedBox(width: 10),
-                        _StatBox(
-                          label: 'Duration',
-                          value: '${project.durationMonths} months',
-                          icon: Icons.calendar_today,
-                          color: AppColors.info,
-                        ),
-                        const SizedBox(width: 10),
-                        const _StatBox(
-                          label: 'Investors',
-                          value: '14',
-                          icon: Icons.people_outline,
-                          color: AppColors.primary,
-                        ),
+                        const SizedBox(height: 80),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // About section
-                    const Text(
-                      'About This Project',
-                      style: AppTextStyles.headingSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'This project focuses on ${project.cropType.toLowerCase()} cultivation in ${project.location}. '
-                      'The farmer has over 5 years of experience and has completed 3 successful harvests previously. '
-                      'Funds will be used for seeds, fertilizers, irrigation equipment, and labor costs for the '
-                      '${project.durationMonths}-month growing season.',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Timeline
-                    const Text(
-                      'Project Timeline',
-                      style: AppTextStyles.headingSmall,
-                    ),
-                    const SizedBox(height: 12),
-                    _TimelineTile(
-                      label: 'Funding Phase',
-                      detail: 'Collecting investments from backers',
-                      isCompleted: project.fundingPercent > 0,
-                      isActive: project.status == 'active',
-                    ),
-                    _TimelineTile(
-                      label: 'Planting Phase',
-                      detail: 'Seeds planted and growing begins',
-                      isCompleted: project.fundingPercent >= 1,
-                      isActive: false,
-                    ),
-                    const _TimelineTile(
-                      label: 'Growing Phase',
-                      detail: 'Crops monitored by Cell Leader',
-                      isCompleted: false,
-                      isActive: false,
-                    ),
-                    _TimelineTile(
-                      label: 'Harvest & Returns',
-                      detail: 'Harvest certified — investors paid',
-                      isCompleted: project.status == 'completed',
-                      isActive: false,
-                      isLast: true,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Cell Leader verification
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.statusActive,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.verified_user,
-                            color: AppColors.success,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Verified by Cell Leader',
-                                  style: AppTextStyles.labelLarge.copyWith(
-                                    color: AppColors.success,
-                                  ),
-                                ),
-                                const Text(
-                                  'Musanze Cell — Approved on Mar 10, 2026',
-                                  style: AppTextStyles.caption,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 80),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-
-      // Bottom CTA
-      bottomNavigationBar:
-          isInvestorView
-              ? _InvestorBottomBar(project: project)
-              : _FarmerBottomBar(project: project),
+          ),
+          bottomNavigationBar:
+              isInvestorView
+                  ? _InvestorBottomBar(project: project)
+                  : _FarmerBottomBar(project: project),
+        );
+      },
     );
+  }
+
+  ProjectStatus _projectStatus(String status) {
+    switch (status) {
+      case 'active':
+        return ProjectStatus.active;
+      case 'completed':
+        return ProjectStatus.completed;
+      case 'rejected':
+        return ProjectStatus.rejected;
+      default:
+        return ProjectStatus.pending;
+    }
   }
 }
 
@@ -484,6 +516,7 @@ class _TimelineTile extends StatelessWidget {
 
 class _InvestorBottomBar extends StatelessWidget {
   final MockProject project;
+
   const _InvestorBottomBar({required this.project});
 
   @override
@@ -517,6 +550,7 @@ class _InvestorBottomBar extends StatelessWidget {
 
 class _FarmerBottomBar extends StatelessWidget {
   final MockProject project;
+
   const _FarmerBottomBar({required this.project});
 
   @override

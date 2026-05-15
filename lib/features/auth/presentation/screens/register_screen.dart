@@ -3,10 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:umusaruro_p2p/core/constants/app_routes.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
-import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
 import 'package:umusaruro_p2p/core/widgets/app_text_field.dart';
+import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -17,30 +18,76 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _nationalIdController = TextEditingController();
+  final _passwordController = TextEditingController();
   String _selectedRole = 'farmer';
   bool _isLoading = false;
+  String? _error;
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
-    _nationalIdController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _onRegister() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    if (!mounted) return;
-    final phone = '+250${_phoneController.text.trim()}';
-    context.push(AppRoutes.otp, extra: phone);
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final session = await ref
+          .read(authApiServiceProvider)
+          .register(
+            fullName: _fullNameController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: '+250${_phoneController.text.trim()}',
+            password: _passwordController.text,
+            role: _selectedRole,
+          );
+
+      final secureStorage = ref.read(secureStorageServiceProvider);
+      if (session.token != null) {
+        await secureStorage.saveToken(session.token!);
+      }
+      if (session.role != null) {
+        await secureStorage.saveRole(session.role!);
+      }
+
+      if (!mounted) return;
+      if (session.token != null) {
+        switch (session.role) {
+          case 'investor':
+            context.go(AppRoutes.investorHome);
+            return;
+          default:
+            context.go(AppRoutes.farmerHome);
+            return;
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created. Please log in.')),
+      );
+      context.go(AppRoutes.login);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -67,14 +114,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Fill in your details to get started.',
+                  'Create your account to start using the platform.',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                // Role
                 const Text(
                   'I am registering as',
                   style: AppTextStyles.labelLarge,
@@ -98,34 +143,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Names
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: 'First Name',
-                        hint: 'Mugabo',
-                        controller: _firstNameController,
-                        validator:
-                            (v) => v == null || v.isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Last Name',
-                        hint: 'Jean',
-                        controller: _lastNameController,
-                        validator:
-                            (v) => v == null || v.isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                  ],
+                AppTextField(
+                  label: 'Full Name',
+                  hint: 'Mugabo Jean',
+                  controller: _fullNameController,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Required';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
-
-                // Phone
+                AppTextField(
+                  label: 'Email',
+                  hint: 'you@example.com',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty)
+                      return 'Required';
+                    if (!value.contains('@')) return 'Enter a valid email';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
                 AppTextField(
                   label: 'Phone Number',
                   hint: '078 000 0000',
@@ -150,37 +192,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ],
                     ),
                   ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    if (v.length < 9) return 'Enter valid 9-digit number';
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Required';
+                    if (value.length < 9) return 'Enter valid 9-digit number';
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
-
-                // National ID
                 AppTextField(
-                  label: 'National ID',
-                  hint: '1 1990 8 0123456 1 89',
-                  controller: _nationalIdController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  maxLength: 16,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    if (v.length < 16) return 'Enter valid 16-digit ID';
+                  label: 'Password',
+                  hint: 'Create a password',
+                  controller: _passwordController,
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Required';
+                    if (value.length < 6) return 'Use at least 6 characters';
                     return null;
                   },
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
-
                 PrimaryButton(
                   label: 'Continue',
                   onPressed: _onRegister,
                   isLoading: _isLoading,
                 ),
                 const SizedBox(height: 16),
-
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -218,6 +263,7 @@ class _RoleChip extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+
   const _RoleChip({
     required this.label,
     required this.icon,

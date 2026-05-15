@@ -27,13 +27,6 @@ class AppRoutes {
   static const String investmentDetail = '/investor/portfolio/:id';
   static const String transactionsInvestor = '/investor/transactions';
 
-  // Cell Leader
-  static const String cellLeaderHome = '/cell-leader/tasks';
-  static const String farmerVerification = '/cell-leader/verify/:id';
-  static const String projectApproval = '/cell-leader/approve/:id';
-  static const String harvestCertification = '/cell-leader/certify/:id';
-  static const String verificationHistory = '/cell-leader/history';
-
   // Shared
   static const String notifications = '/notifications';
   static const String messages = '/messages';

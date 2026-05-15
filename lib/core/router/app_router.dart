@@ -14,9 +14,9 @@ import 'package:umusaruro_p2p/features/auth/presentation/screens/farmer_profile_
 import 'package:umusaruro_p2p/features/auth/presentation/screens/pending_verification_screen.dart';
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/farmer_home_screen.dart';
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/my_projects_screen.dart';
+import 'package:umusaruro_p2p/features/farmer/presentation/screens/create_project_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/investor_home_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/browse_projects_screen.dart';
-import 'package:umusaruro_p2p/features/cell_leader/presentation/screens/cell_leader_home_screen.dart';
 import 'package:umusaruro_p2p/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:umusaruro_p2p/features/messages/presentation/screens/messages_screen.dart';
 import 'package:umusaruro_p2p/features/profile/presentation/screens/profile_screen.dart';
@@ -80,6 +80,10 @@ GoRouter appRouter(Ref ref) {
             builder: (context, state) => const MyProjectsScreen(),
           ),
           GoRoute(
+            path: AppRoutes.createProject,
+            builder: (context, state) => const CreateProjectScreen(),
+          ),
+          GoRoute(
             path: AppRoutes.messages,
             builder: (context, state) => const MessagesScreen(),
           ),
@@ -101,17 +105,6 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: AppRoutes.browseProjects,
             builder: (context, state) => const BrowseProjectsScreen(),
-          ),
-        ],
-      ),
-
-      // ── Cell Leader Shell ──────────────────────────────────────────────────
-      ShellRoute(
-        builder: (context, state, child) => CellLeaderShell(child: child),
-        routes: [
-          GoRoute(
-            path: AppRoutes.cellLeaderHome,
-            builder: (context, state) => const CellLeaderHomeScreen(),
           ),
         ],
       ),
@@ -294,65 +287,6 @@ class InvestorShell extends StatelessWidget {
         context.go(AppRoutes.messages);
         return;
       case 4:
-        context.go(AppRoutes.profile);
-        return;
-    }
-  }
-}
-
-class CellLeaderShell extends StatelessWidget {
-  final Widget child;
-  const CellLeaderShell({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex(context),
-        onTap: (index) => _onTap(context, index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_outlined),
-            activeIcon: Icon(Icons.checklist),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Messages',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-
-  int _currentIndex(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith(AppRoutes.verificationHistory)) return 1;
-    if (location.startsWith(AppRoutes.messages)) return 2;
-    if (location.startsWith(AppRoutes.profile)) return 3;
-    return 0;
-  }
-
-  void _onTap(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.cellLeaderHome);
-        return;
-      case 1:
-        context.go(AppRoutes.verificationHistory);
-        return;
-      case 2:
-        context.go(AppRoutes.messages);
-        return;
-      case 3:
         context.go(AppRoutes.profile);
         return;
     }

@@ -182,7 +182,7 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
               const Text('Photo Evidence', style: AppTextStyles.headingSmall),
               const SizedBox(height: 4),
               Text(
-                'Upload at least 2 photos of the harvest for Cell Leader verification.',
+                'Upload at least 2 photos of the harvest for review.',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -332,7 +332,7 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Your harvest report has been sent to the Cell Leader for verification. '
+                'Your harvest report has been sent for verification. '
                 'Investors will be notified once it is certified.',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.textSecondary,
@@ -355,10 +355,7 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
                       value: _formatAmount(_totalRevenue),
                     ),
                     const SizedBox(height: 8),
-                    const _SummaryRow(
-                      label: 'Status',
-                      value: 'Pending Cell Leader Review',
-                    ),
+                    const _SummaryRow(label: 'Status', value: 'Pending Review'),
                   ],
                 ),
               ),

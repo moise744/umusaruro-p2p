@@ -49,9 +49,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         case 'investor':
           if (mounted) context.go(AppRoutes.investorHome);
           break;
-        case 'cell_leader':
-          if (mounted) context.go(AppRoutes.cellLeaderHome);
-          break;
         default:
           if (mounted) context.go(AppRoutes.login);
           break;

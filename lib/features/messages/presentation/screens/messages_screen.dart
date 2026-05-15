@@ -26,7 +26,7 @@ final _conversations = [
     icon: Icons.person_outline,
   ),
   const _MockConversation(
-    name: 'Cell Leader â€” Musanze',
+    name: 'Review Team',
     lastMessage: 'Your profile is under review.',
     time: 'Yesterday',
     unread: 0,
