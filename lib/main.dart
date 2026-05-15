@@ -15,7 +15,6 @@ import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final localStorageService = LocalStorageService();
-  await localStorageService.init();
   final secureStorageService = SecureStorageService(
     const FlutterSecureStorage(),
   );

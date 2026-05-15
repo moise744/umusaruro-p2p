@@ -29,7 +29,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       final localStorage = ref.read(localStorageServiceProvider);
       final secureStorage = ref.read(secureStorageServiceProvider);
 
-      final onboardingDone = localStorage.isOnboardingDone();
+      final onboardingDone = await localStorage.isOnboardingDone();
       if (!onboardingDone) {
         if (mounted) context.go(AppRoutes.onboarding);
         return;
@@ -59,6 +59,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     } catch (e, st) {
       debugPrint('[ERROR] Navigation error: $e');
       debugPrint('[ERROR] Stack trace: $st');
+      if (mounted) context.go(AppRoutes.onboarding);
     }
   }
 

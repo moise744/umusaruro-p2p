@@ -7,9 +7,19 @@ import 'package:flutter/foundation.dart';
 class LocalStorageService {
   static const String _boxName = 'umusaruro_box';
   late Box<dynamic> _box;
+  Future<void>? _initFuture;
 
   /// Initialize Hive and open the box
   Future<void> init() async {
+    if (_initFuture != null) {
+      return _initFuture;
+    }
+
+    _initFuture = _init();
+    return _initFuture;
+  }
+
+  Future<void> _init() async {
     try {
       // Set Hive directory to app documents
       final appDir = await getApplicationDocumentsDirectory();
@@ -25,11 +35,13 @@ class LocalStorageService {
 
   /// Save a value
   Future<void> save(String key, dynamic value) async {
+    await init();
     await _box.put(key, value);
   }
 
   /// Get a value
-  T? get<T>(String key, {T? defaultValue}) {
+  Future<T?> get<T>(String key, {T? defaultValue}) async {
+    await init();
     try {
       return _box.get(key, defaultValue: defaultValue) as T?;
     } catch (e) {
@@ -39,30 +51,36 @@ class LocalStorageService {
 
   /// Delete a value
   Future<void> delete(String key) async {
+    await init();
     await _box.delete(key);
   }
 
   /// Clear all data
   Future<void> clear() async {
+    await init();
     await _box.clear();
   }
 
   /// Check if key exists
-  bool exists(String key) {
+  Future<bool> exists(String key) async {
+    await init();
     return _box.containsKey(key);
   }
 
-  bool isOnboardingDone() {
+  Future<bool> isOnboardingDone() async {
+    await init();
     return _box.get(AppConstants.onboardingDoneKey, defaultValue: false)
         as bool;
   }
 
   Future<void> setOnboardingDone() async {
+    await init();
     await _box.put(AppConstants.onboardingDoneKey, true);
   }
 
   /// Get box
-  Box<dynamic> getBox() {
+  Future<Box<dynamic>> getBox() async {
+    await init();
     return _box;
   }
 }
