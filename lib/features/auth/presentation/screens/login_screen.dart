@@ -47,6 +47,9 @@ class _LoginNotifier extends Notifier<_LoginState> {
         case 'investor':
           context.go(AppRoutes.investorHome);
           return;
+        case 'cell_leader':
+          context.go(AppRoutes.cellLeaderHome);
+          return;
         default:
           context.go(AppRoutes.farmerHome);
           return;

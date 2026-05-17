@@ -18,6 +18,9 @@ class AppRoutes {
   static const String submitHarvest = '/farmer/projects/:id/harvest';
   static const String transactionsFarmer = '/farmer/transactions';
 
+  // Cell leader
+  static const String cellLeaderHome = '/cell-leader/home';
+
   // Investor
   static const String investorHome = '/investor/home';
   static const String browseProjects = '/investor/browse';

@@ -80,10 +80,6 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_landDocument == null) {
-      setState(() => _error = 'Please upload a land document.');
-      return;
-    }
 
     setState(() {
       _isLoading = true;
@@ -98,7 +94,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
             description: _descriptionController.text.trim(),
             location: _locationController.text.trim(),
             landOwnershipType: _landOwnershipType,
-            landDocument: _landDocument!,
+            landDocument: _landDocument,
             province: _provinceController.text.trim(),
             district: _districtController.text.trim(),
             sector: _sectorController.text.trim(),
@@ -279,7 +275,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Land Document'),
                 subtitle: Text(
-                  _landDocument?.path.split('\\').last ?? 'Required',
+                  _landDocument?.path.split('\\').last ?? 'Optional',
                 ),
                 trailing: OutlinedButton(
                   onPressed: _pickDocument,

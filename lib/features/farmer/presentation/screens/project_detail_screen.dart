@@ -332,14 +332,22 @@ class ProjectDetailScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppColors.statusActive,
+                            color:
+                                project.status == 'active'
+                                    ? AppColors.statusActive
+                                    : AppColors.offlineBanner,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.verified_user,
-                                color: AppColors.success,
+                              Icon(
+                                project.status == 'active'
+                                    ? Icons.verified_user
+                                    : Icons.hourglass_top_rounded,
+                                color:
+                                    project.status == 'active'
+                                        ? AppColors.success
+                                        : AppColors.warning,
                                 size: 20,
                               ),
                               const SizedBox(width: 10),
@@ -348,13 +356,20 @@ class ProjectDetailScreen extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Verified',
+                                      project.status == 'active'
+                                          ? 'Verified'
+                                          : 'Pending verification',
                                       style: AppTextStyles.labelLarge.copyWith(
-                                        color: AppColors.success,
+                                        color:
+                                            project.status == 'active'
+                                                ? AppColors.success
+                                                : AppColors.warning,
                                       ),
                                     ),
-                                    const Text(
-                                      'Approved on Mar 10, 2026',
+                                    Text(
+                                      project.status == 'active'
+                                          ? 'Approved by Cell Leader'
+                                          : 'Waiting for cell leader approval',
                                       style: AppTextStyles.caption,
                                     ),
                                   ],

@@ -90,6 +90,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           case 'investor':
             context.go(AppRoutes.investorHome);
             return;
+          case 'cell_leader':
+            context.go(AppRoutes.cellLeaderHome);
+            return;
           default:
             context.go(AppRoutes.farmerHome);
             return;

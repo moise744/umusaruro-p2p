@@ -68,6 +68,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           case 'investor':
             context.go(AppRoutes.investorHome);
             return;
+          case 'cell_leader':
+            context.go(AppRoutes.cellLeaderHome);
+            return;
           default:
             context.go(AppRoutes.farmerHome);
             return;
@@ -140,6 +143,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       selected: _selectedRole == 'investor',
                       onTap: () => setState(() => _selectedRole = 'investor'),
                     ),
+                    const SizedBox(width: 10),
+                    _RoleChip(
+                      label: 'Cell Leader',
+                      icon: Icons.verified_user,
+                      selected: _selectedRole == 'cell_leader',
+                      onTap:
+                          () => setState(() => _selectedRole = 'cell_leader'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -161,9 +172,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Required';
-                    if (!value.contains('@')) return 'Enter a valid email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Enter a valid email';
+                    }
                     return null;
                   },
                 ),

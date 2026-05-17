@@ -15,6 +15,7 @@ import 'package:umusaruro_p2p/features/auth/presentation/screens/pending_verific
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/farmer_home_screen.dart';
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/my_projects_screen.dart';
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/create_project_screen.dart';
+import 'package:umusaruro_p2p/features/cell_leader/presentation/screens/cell_leader_home_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/investor_home_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/browse_projects_screen.dart';
 import 'package:umusaruro_p2p/features/notifications/presentation/screens/notifications_screen.dart';
@@ -65,6 +66,12 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.pendingVerification,
         builder: (context, state) => const PendingVerificationScreen(),
+      ),
+
+      // ── Cell Leader ───────────────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.cellLeaderHome,
+        builder: (context, state) => const CellLeaderHomeScreen(),
       ),
 
       // ── Farmer Shell (bottom nav) ──────────────────────────────────────────

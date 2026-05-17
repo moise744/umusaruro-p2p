@@ -1,7 +1,3 @@
-import 'package:dio/dio.dart';
-import 'package:umusaruro_p2p/core/errors/app_exception.dart';
-import 'package:umusaruro_p2p/core/network/api_client.dart';
-
 class AuthSession {
   final String? token;
   final String? role;
@@ -11,19 +7,18 @@ class AuthSession {
 }
 
 class AuthApiService {
-  final Dio _dio;
-
-  AuthApiService(ApiClient client) : _dio = client.dio;
+  static const _mockToken = 'mock_jwt_token';
 
   Future<AuthSession> login({
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post(
-      '/auth/login',
-      data: {'email': email, 'password': password},
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    return AuthSession(
+      token: _mockToken,
+      role: _roleForEmail(email),
+      message: 'Signed in with mock data.',
     );
-    return _parseSession(response.data);
   }
 
   Future<AuthSession> register({
@@ -33,89 +28,23 @@ class AuthApiService {
     required String password,
     required String role,
   }) async {
-    final response = await _dio.post(
-      '/auth/register/user',
-      data: {
-        'fullName': fullName,
-        'email': email,
-        'phone': phone,
-        'password': password,
-        'role': role.toUpperCase(),
-      },
-    );
-    return _parseSession(response.data, fallbackRole: role);
-  }
-
-  AuthSession _parseSession(dynamic data, {String? fallbackRole}) {
-    if (data is! Map && data is! String) {
-      throw const ServerException(message: 'Unexpected response from server.');
-    }
-
-    final token = _extractToken(data);
-    final role = _extractRole(data) ?? fallbackRole;
-    final message = data is Map ? _extractString(data['message']) : null;
-
+    await Future<void>.delayed(const Duration(milliseconds: 400));
     return AuthSession(
-      token: token,
+      token: _mockToken,
       role: _normalizeRole(role),
-      message: message,
+      message: 'Account created with mock data.',
     );
   }
 
-  String? _extractToken(dynamic data) {
-    if (data is String) {
-      return data.trim().isEmpty ? null : data;
+  String? _roleForEmail(String email) {
+    final normalized = email.toLowerCase();
+    if (normalized.contains('leader') || normalized.contains('cell')) {
+      return 'cell_leader';
     }
-
-    if (data is Map) {
-      for (final key in [
-        'token',
-        'accessToken',
-        'access_token',
-        'jwt',
-        'data',
-      ]) {
-        final value = data[key];
-        final token = _extractToken(value);
-        if (token != null && token.isNotEmpty) {
-          return token;
-        }
-      }
+    if (normalized.contains('investor')) {
+      return 'investor';
     }
-
-    return null;
-  }
-
-  String? _extractRole(dynamic data) {
-    if (data is Map) {
-      for (final key in ['role', 'userRole']) {
-        final value = data[key];
-        final extracted = _extractString(value);
-        if (extracted != null && extracted.isNotEmpty) {
-          return extracted;
-        }
-      }
-
-      final nestedData = data['data'];
-      if (nestedData is Map) {
-        final nestedRole = _extractRole(nestedData);
-        if (nestedRole != null) {
-          return nestedRole;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  String? _extractString(dynamic value) {
-    if (value == null) {
-      return null;
-    }
-    if (value is String) {
-      return value;
-    }
-    return value.toString();
+    return 'farmer';
   }
 
   String? _normalizeRole(String? role) {
