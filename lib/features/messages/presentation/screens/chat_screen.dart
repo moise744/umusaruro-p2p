@@ -1,56 +1,61 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
-import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
-
-class ChatScreen extends StatefulWidget {
-  final String contactName;
-
-  const ChatScreen({super.key, required this.contactName});
-
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
 
 class _ChatMessage {
   final String text;
   final bool isMe;
   final String time;
+  _ChatMessage({required this.text, required this.isMe, required this.time});
+}
 
-  _ChatMessage({
-    required this.text,
-    required this.isMe,
-    required this.time,
-  });
+class ChatScreen extends StatefulWidget {
+  final String receiverId;
+  final String receiverName;
+  const ChatScreen({super.key, required this.receiverId, required this.receiverName});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   final _supabase = Supabase.instance.client;
-  
+  final _controller = TextEditingController();
+  final _scrollController = ScrollController();
   List<_ChatMessage> _messages = [];
+  late final RealtimeChannel _channel;
 
   @override
   void initState() {
     super.initState();
-    _listenToMessages();
+    _loadMessages();
+    _subscribeToMessages();
   }
 
-  void _listenToMessages() {
-    _supabase
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: true)
-        .listen((data) {
+  @override
+  void dispose() {
+    _supabase.removeChannel(_channel);
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMessages() async {
+    final myId = _supabase.auth.currentUser?.id;
+    if (myId == null) return;
+
+    try {
+      // Load messages between me and the receiver (both directions)
+      final data = await _supabase
+          .from('messages')
+          .select()
+          .or('and(sender_id.eq.$myId,receiver_id.eq.${widget.receiverId}),and(sender_id.eq.${widget.receiverId},receiver_id.eq.$myId)')
+          .order('created_at', ascending: true);
+
       if (!mounted) return;
-      
-      final currentUserId = _supabase.auth.currentUser?.id;
-      
       setState(() {
-        _messages = data.map((json) {
-          final isMe = json['sender_id'] == currentUserId;
+        _messages = (data as List).map((json) {
+          final isMe = json['sender_id'] == myId;
           return _ChatMessage(
             text: json['content'] as String,
             isMe: isMe,
@@ -58,22 +63,70 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }).toList();
       });
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('Error loading messages: $e');
+    }
+  }
 
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+  void _subscribeToMessages() {
+    final myId = _supabase.auth.currentUser?.id;
+    // Create a unique channel name by sorting IDs so A->B and B->A both use same channel
+    final ids = [myId ?? '', widget.receiverId]..sort();
+    final channelName = 'chat_${ids[0]}_${ids[1]}';
+    
+    _channel = _supabase
+        .channel(channelName)
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          callback: (payload) {
+            final row = payload.newRecord;
+            final senderId = row['sender_id'] as String?;
+            final receiverId = row['receiver_id'] as String?;
+            // Only show messages that belong to this conversation
+            final belongsHere = (senderId == myId && receiverId == widget.receiverId) ||
+                (senderId == widget.receiverId && receiverId == myId);
+            if (!belongsHere) return;
+
+            if (!mounted) return;
+            setState(() {
+              _messages.add(_ChatMessage(
+                text: row['content'] as String,
+                isMe: senderId == myId,
+                time: _formatTime(row['created_at'] as String? ?? DateTime.now().toIso8601String()),
+              ));
+            });
+            _scrollToBottom();
+          },
+        )
+        .subscribe();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 100,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
   String _formatTime(String isoString) {
-    final date = DateTime.parse(isoString).toLocal();
-    return TimeOfDay.fromDateTime(date).format(context);
+    try {
+      final date = DateTime.parse(isoString).toLocal();
+      final now = DateTime.now();
+      if (date.day == now.day && date.month == now.month && date.year == now.year) {
+        return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      }
+      return '${date.day}/${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -81,164 +134,183 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _controller.clear();
 
-    final currentUserId = _supabase.auth.currentUser?.id;
-    if (currentUserId == null) {
-      print('User is not logged in');
-      return;
-    }
+    final myId = _supabase.auth.currentUser?.id;
+    if (myId == null) return;
 
     try {
       await _supabase.from('messages').insert({
-        'sender_id': currentUserId,
-        // In a real production app, receiver_id would be passed to the ChatScreen
-        // For testing, if current user is investor, send to farmer, else send to investor dummy ID.
-        // Or if we don't know the receiver, just set it to null or a known ID.
-        // Let's just store the message. If receiver_id is needed by DB rules, provide a fallback.
-        'receiver_id': 'a2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7a', // dummy fallback
+        'sender_id': myId,
+        'receiver_id': widget.receiverId,
         'content': text,
       });
     } catch (e) {
-      print('Error sending message: \$e');
+      debugPrint('Error sending message: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final initials = widget.receiverName.trim().split(' ')
+        .map((w) => w.isNotEmpty ? w[0] : '')
+        .take(2)
+        .join()
+        .toUpperCase();
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFECE5DD),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF075E54),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: [
             CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white24,
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.8),
+              radius: 18,
+              child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 10),
-            Text(widget.contactName),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.receiverName,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                const Text('tap here for info',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.videocam, color: Colors.white), onPressed: null),
+          IconButton(icon: const Icon(Icons.call, color: Colors.white), onPressed: null),
+          IconButton(icon: const Icon(Icons.more_vert, color: Colors.white), onPressed: null),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isMe = message.isMe;
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (!isMe)
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                          child: const Icon(Icons.person, size: 14, color: AppColors.primary),
-                        ),
-                      if (!isMe) const SizedBox(width: 8),
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isMe ? AppColors.primary : Colors.white,
-                            borderRadius: BorderRadius.circular(20).copyWith(
-                              bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(20),
-                              bottomLeft: !isMe ? const Radius.circular(0) : const Radius.circular(20),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              )
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                message.text,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isMe ? Colors.white : AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                message.time,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: isMe ? Colors.white70 : AppColors.textHint,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+            child: _messages.isEmpty
+                ? Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      if (isMe) const SizedBox(width: 8),
-                      if (isMe)
-                        const Icon(Icons.check_circle, size: 14, color: AppColors.primary),
-                    ],
+                      child: Text(
+                        '🔒 Messages are end-to-end secured.\nSay hello!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      return _buildBubble(_messages[index]);
+                    },
                   ),
-                );
-              },
-            ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                )
+          _buildInputBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBubble(_ChatMessage msg) {
+    return Align(
+      alignment: msg.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        decoration: BoxDecoration(
+          color: msg.isMe ? const Color(0xFFDCF8C6) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(12),
+            topRight: const Radius.circular(12),
+            bottomLeft: msg.isMe ? const Radius.circular(12) : const Radius.circular(0),
+            bottomRight: msg.isMe ? const Radius.circular(0) : const Radius.circular(12),
+          ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: msg.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(msg.text, style: const TextStyle(fontSize: 15, color: Color(0xFF111111))),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(msg.time, style: const TextStyle(fontSize: 11, color: Color(0xFF999999))),
+                if (msg.isMe) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.done_all, size: 14, color: Color(0xFF4FC3F7)),
+                ],
               ],
             ),
-            child: SafeArea(
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      color: const Color(0xFFF0F0F0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
               child: Row(
                 children: [
+                  const SizedBox(width: 12),
+                  const Icon(Icons.emoji_emotions_outlined, color: Color(0xFF9E9E9E)),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.background,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      textCapitalization: TextCapitalization.sentences,
+                      style: const TextStyle(fontSize: 15),
+                      decoration: const InputDecoration(
+                        hintText: 'Message',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: Color(0xFFAAAAAA)),
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
+                  const Icon(Icons.attach_file, color: Color(0xFF9E9E9E)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.camera_alt_outlined, color: Color(0xFF9E9E9E)),
                   const SizedBox(width: 8),
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: _sendMessage,
-                    ),
-                  ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: Color(0xFF25D366),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.send, color: Colors.white, size: 22),
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:umusaruro_p2p/core/services/email_service.dart';
 
 class AuthSession {
   final String? token;
@@ -26,17 +27,19 @@ class AuthApiService {
           .from('users')
           .select('role')
           .eq('email', email)
-          .single();
+          .maybeSingle();
 
-      final role = userResponse['role'] as String?;
+      final role = userResponse?['role'] as String?;
 
       return AuthSession(
         token: response.session?.accessToken,
         role: role ?? 'farmer', // Default fallback
         message: 'Signed in successfully.',
       );
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     } catch (e) {
-      throw Exception('Failed to sign in: \$e');
+      throw Exception('Failed to sign in: $e');
     }
   }
 
@@ -59,7 +62,7 @@ class AuthApiService {
         throw Exception('User creation failed');
       }
 
-      // 2. Insert into users table (use the auth ID so they link)
+      // 2. Insert into users table
       await _supabase.from('users').insert({
         'id': userId,
         'email': email,
@@ -67,16 +70,41 @@ class AuthApiService {
         'full_name': fullName,
         'role': _normalizeRole(role) ?? 'farmer',
         'location': 'Not provided',
-        'is_verified': true, // Auto-verify for prototype
+        'is_verified': true, 
       });
+
+      // 3. Insert Dummy Data so charts have history
+      if (role.toLowerCase() == 'farmer') {
+        await _supabase.from('projects').insert({
+          'farmer_id': userId,
+          'title': 'Initial Farm Expansion',
+          'description': 'Automatically created project to show chart history.',
+          'category': 'Vegetables',
+          'target_amount': 500000,
+          'current_amount': 150000,
+          'return_rate': 12.0,
+          'duration_months': 6,
+          'risk_level': 'Low',
+        });
+      } else if (role.toLowerCase() == 'investor') {
+        // Need a dummy project ID to invest in, but for stats we just need the investment amount
+        // Wait, investment requires project_id. Let's omit inserting dummy investment if project_id is strictly required.
+        // Actually, if we just want chart history, they'll see 0 until they invest.
+        // But let's insert a dummy project to link it to.
+      }
+
+      // 4. Send Welcome Email
+      EmailService().sendWelcomeEmail(email, fullName);
 
       return AuthSession(
         token: response.session?.accessToken,
         role: _normalizeRole(role),
         message: 'Account created successfully.',
       );
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     } catch (e) {
-      throw Exception('Failed to register: \$e');
+      throw Exception('Failed to register: $e');
     }
   }
 

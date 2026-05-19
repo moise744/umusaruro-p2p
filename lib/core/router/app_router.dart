@@ -185,8 +185,11 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/chat',
         builder: (context, state) {
-          final contactName = state.extra as String? ?? 'Chat';
-          return ChatScreen(contactName: contactName);
+          final data = state.extra as Map<String, dynamic>;
+          return ChatScreen(
+            receiverId: data['id'] as String,
+            receiverName: data['name'] as String,
+          );
         },
       ),
     ],

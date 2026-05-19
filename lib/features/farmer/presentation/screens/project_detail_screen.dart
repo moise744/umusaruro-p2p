@@ -78,9 +78,12 @@ class ProjectDetailScreen extends ConsumerWidget {
                           color: Colors.white,
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Edit feature coming soon'),
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Edit Project'),
+                              content: const Text('To edit this project, please contact support or use the web dashboard.'),
+                              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
                             ),
                           );
                         },
@@ -619,11 +622,8 @@ class _FarmerBottomBar extends StatelessWidget {
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Messages feature coming soon'),
-                  ),
-                );
+                // Navigate to messages, pick a user to chat with
+                context.push('/messages');
               },
               icon: const Icon(Icons.chat_bubble_outline),
               label: const Text('Messages'),

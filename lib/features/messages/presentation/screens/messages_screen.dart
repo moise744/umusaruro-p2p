@@ -1,120 +1,152 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:go_router/go_router.dart';
 
-class _MockConversation {
-  final String name;
-  final String lastMessage;
-  final String time;
-  final int unread;
-  final IconData icon;
-  const _MockConversation({
-    required this.name,
-    required this.lastMessage,
-    required this.time,
-    required this.unread,
-    required this.icon,
-  });
+class MessagesScreen extends StatefulWidget {
+  const MessagesScreen({super.key});
+
+  @override
+  State<MessagesScreen> createState() => _MessagesScreenState();
 }
 
-final _conversations = [
-  const _MockConversation(
-    name: 'Kagabo Jean',
-    lastMessage: 'The harvest report has been submitted.',
-    time: '10:32',
-    unread: 2,
-    icon: Icons.person_outline,
-  ),
-  const _MockConversation(
-    name: 'Review Team',
-    lastMessage: 'Your profile is under review.',
-    time: 'Yesterday',
-    unread: 0,
-    icon: Icons.apartment_outlined,
-  ),
-  const _MockConversation(
-    name: 'Uwimana Alice',
-    lastMessage: 'Thank you for your investment!',
-    time: 'Mon',
-    unread: 0,
-    icon: Icons.person_outline,
-  ),
-  const _MockConversation(
-    name: 'Support',
-    lastMessage: 'How can we help you today?',
-    time: 'Mar 28',
-    unread: 0,
-    icon: Icons.support_agent_outlined,
-  ),
-];
+class _MessagesScreenState extends State<MessagesScreen> {
+  final _supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
+  String? _error;
 
-class MessagesScreen extends StatelessWidget {
-  const MessagesScreen({super.key});
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchUsers() async {
+    try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+
+      final response = await _supabase
+          .from('users')
+          .select('id, full_name, role, location')
+          .neq('id', currentUserId ?? '');
+
+      if (mounted) {
+        setState(() {
+          _users = List<Map<String, dynamic>>.from(response as List);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load users: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages')),
-      backgroundColor: AppColors.background,
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _conversations.length,
-        itemBuilder: (context, index) {
-          final c = _conversations[index];
-          return Container(
-            color: AppColors.surface,
-            child: ListTile(
-              onTap: () {
-                context.push('/chat', extra: c.name);
-              },
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              leading: CircleAvatar(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                radius: 26,
-                child: Icon(c.icon, color: AppColors.primary, size: 26),
-              ),
-              title: Text(c.name, style: AppTextStyles.labelLarge),
-              subtitle: Text(
-                c.lastMessage,
-                style: AppTextStyles.bodySmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(c.time, style: AppTextStyles.caption),
-                  if (c.unread > 0) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${c.unread}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        },
+      appBar: AppBar(
+        title: const Text('Messages'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() => _isLoading = true);
+              _fetchUsers();
+            },
+          ),
+        ],
       ),
+      backgroundColor: AppColors.background,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text(_error!, style: AppTextStyles.bodyMedium, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() { _isLoading = true; _error = null; });
+                          _fetchUsers();
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _users.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.people_outline, size: 64, color: AppColors.textHint),
+                          SizedBox(height: 12),
+                          Text('No other users yet.\nRegister another account to chat!',
+                              style: AppTextStyles.bodyMedium,
+                              textAlign: TextAlign.center),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _users.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final user = _users[index];
+                        final name = user['full_name'] as String;
+                        final role = user['role'] as String;
+                        final userId = user['id'] as String;
+                        final initials = name.isNotEmpty
+                            ? name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+                            : '?';
+
+                        return Container(
+                          color: AppColors.surface,
+                          child: ListTile(
+                            onTap: () {
+                              context.push('/chat', extra: {'id': userId, 'name': name});
+                            },
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.primary,
+                              radius: 26,
+                              child: Text(
+                                initials,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            title: Text(name, style: AppTextStyles.labelLarge),
+                            subtitle: Text(
+                              role.replaceAll('_', ' ').toUpperCase(),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.chat_bubble_outline,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
     );
   }
 }

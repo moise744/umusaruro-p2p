@@ -7,21 +7,45 @@ class ProjectApiService {
 
   Future<List<MockProject>> getMyProjects() async {
     try {
-      final response = await _supabase.from('projects').select().order('created_at', ascending: false);
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) return [];
+
+      final response = await _supabase
+          .from('projects')
+          .select('*, users!farmer_id(full_name, location)')
+          .eq('farmer_id', currentUserId)
+          .order('created_at', ascending: false);
       return (response as List).map((json) => _mapToMockProject(json)).toList();
     } catch (e) {
-      print('Error fetching projects: \$e');
+      debugPrint('Error fetching my projects: $e');
+      return [];
+    }
+  }
+
+  Future<List<MockProject>> getAllProjects() async {
+    try {
+      final response = await _supabase
+          .from('projects')
+          .select('*, users!farmer_id(full_name, location)')
+          .order('created_at', ascending: false);
+      return (response as List).map((json) => _mapToMockProject(json)).toList();
+    } catch (e) {
+      debugPrint('Error fetching all projects: $e');
       return [];
     }
   }
 
   Future<MockProject> getProjectById(String id) async {
     try {
-      final response = await _supabase.from('projects').select().eq('id', id).single();
+      final response = await _supabase
+          .from('projects')
+          .select('*, users!farmer_id(full_name, location)')
+          .eq('id', id)
+          .single();
       return _mapToMockProject(response);
     } catch (e) {
-      print('Error fetching project by id: \$e');
-      throw Exception('Project not found');
+      debugPrint('Error fetching project by id: $e');
+      throw Exception('Project not found: $e');
     }
   }
 
@@ -42,6 +66,9 @@ class ProjectApiService {
     dynamic projectImage,
   }) async {
     try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) throw Exception('Not logged in');
+
       final cropType = projectType != null && projectType.trim().isNotEmpty ? projectType.trim() : 'Crop';
       final locationParts = <String>[
         if (sector != null && sector.isNotEmpty) sector,
@@ -51,22 +78,22 @@ class ProjectApiService {
       final finalLocation = locationParts.isNotEmpty ? locationParts.join(', ') : location;
 
       await _supabase.from('projects').insert({
+        'farmer_id': currentUserId,
         'title': title,
         'description': description,
         'category': cropType,
         'target_amount': capitalNeeded ?? 0,
-        'status': 'pending',
-        'return_rate': 15.0, // Default for now
-        'duration_months': 6, // Default for now
-        'risk_level': 'Medium', // Default for now
+        'current_amount': 0,
+        'status': 'funding',
+        'return_rate': 15.0,
+        'duration_months': 6,
+        'risk_level': 'Medium',
         'latitude': latitude,
         'longitude': longitude,
-        // Optional: Assuming the user is authenticated and we have their farmer_id.
-        // For now, if no auth, this might fail unless policies are disabled.
       });
     } catch (e) {
-      print('Error creating project: \$e');
-      throw e;
+      debugPrint('Error creating project: $e');
+      rethrow;
     }
   }
 
@@ -74,23 +101,27 @@ class ProjectApiService {
     try {
       await _supabase.from('projects').update({'status': 'active'}).eq('id', id);
     } catch (e) {
-      print('Error approving project: \$e');
+      debugPrint('Error approving project: $e');
     }
   }
 
   MockProject _mapToMockProject(Map<String, dynamic> json) {
+    final userMap = json['users'] as Map<String, dynamic>?;
+    final farmerName = userMap?['full_name'] as String? ?? 'Unknown';
+    final location = userMap?['location'] as String? ?? 'Rwanda';
+
     return MockProject(
       id: json['id'] as String,
       title: json['title'] as String,
-      farmerName: 'Kagabo Jean', // Assuming a join with users table could get this
-      cropType: json['category'] as String,
-      location: 'Musanze', // Or derive from lat/long if location isn't a column
-      targetAmount: (json['target_amount'] as num).toDouble(),
-      raisedAmount: (json['current_amount'] as num?)?.toDouble() ?? 0,
-      returnRate: (json['return_rate'] as num?)?.toDouble() ?? 0,
-      durationMonths: (json['duration_months'] as num?)?.toInt() ?? 0,
+      farmerName: farmerName,
+      cropType: json['category'] as String? ?? 'Crop',
+      location: location,
+      targetAmount: (json['target_amount'] as num? ?? 0).toDouble(),
+      raisedAmount: (json['current_amount'] as num? ?? 0).toDouble(),
+      returnRate: (json['return_rate'] as num? ?? 0).toDouble(),
+      durationMonths: (json['duration_months'] as num? ?? 6).toInt(),
       status: json['status'] as String? ?? 'funding',
-      imageIcon: _iconForCrop(json['category'] as String),
+      imageIcon: _iconForCrop(json['category'] as String? ?? ''),
     );
   }
 
@@ -105,6 +136,8 @@ class ProjectApiService {
         return Icons.agriculture;
       case 'rice':
         return Icons.grass;
+      case 'tea':
+        return Icons.local_cafe;
       default:
         return Icons.eco;
     }

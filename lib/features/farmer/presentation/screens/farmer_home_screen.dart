@@ -20,15 +20,37 @@ class FarmerHomeScreen extends ConsumerStatefulWidget {
 
 class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
   final _supabase = Supabase.instance.client;
+  String _firstName = 'Farmer';
   List<FlSpot> _chartData = const [
     FlSpot(0, 0), FlSpot(1, 0), FlSpot(2, 0), FlSpot(3, 0), FlSpot(4, 0), FlSpot(5, 0),
   ];
-  double _totalRaised = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchLiveStats();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final currentUserId = _supabase.auth.currentUser?.id;
+    if (currentUserId == null) return;
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', currentUserId)
+          .maybeSingle();
+
+      if (response != null && mounted) {
+        setState(() {
+          final fullName = response['full_name'] as String;
+          _firstName = fullName.split(' ').first;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching name: $e');
+    }
   }
 
   Future<void> _fetchLiveStats() async {
@@ -48,7 +70,6 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
 
       if (!mounted) return;
       setState(() {
-        _totalRaised = total;
         // Generate a trend line leading up to the total
         _chartData = [
           FlSpot(0, total * 0.1),
@@ -102,7 +123,7 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
                               Row(
                                 children: [
                                   Text(
-                                    'Muraho, Kagabo',
+                                    'Muraho, $_firstName',
                                     style: AppTextStyles.headingLarge.copyWith(
                                       color: Colors.white,
                                     ),

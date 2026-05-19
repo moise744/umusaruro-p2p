@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 
@@ -26,59 +27,6 @@ class _Transaction {
   });
 }
 
-final _transactions = [
-  const _Transaction(
-    id: '1',
-    title: 'Investment — Maize Farm',
-    subtitle: 'Musanze, Northern Province',
-    amount: 500000,
-    isCredit: false,
-    date: 'Mar 15, 2026',
-    type: TransactionType.investment,
-    status: 'completed',
-  ),
-  const _Transaction(
-    id: '2',
-    title: 'Investment — Coffee Plantation',
-    subtitle: 'Huye, Southern Province',
-    amount: 1000000,
-    isCredit: false,
-    date: 'Feb 20, 2026',
-    type: TransactionType.investment,
-    status: 'completed',
-  ),
-  const _Transaction(
-    id: '3',
-    title: 'Harvest Return — Irish Potato',
-    subtitle: 'Nyamagabe, Southern Province',
-    amount: 345000,
-    isCredit: true,
-    date: 'Jan 28, 2026',
-    type: TransactionType.return_,
-    status: 'completed',
-  ),
-  const _Transaction(
-    id: '4',
-    title: 'Wallet Top Up',
-    subtitle: 'MTN Mobile Money',
-    amount: 2000000,
-    isCredit: true,
-    date: 'Jan 10, 2026',
-    type: TransactionType.deposit,
-    status: 'completed',
-  ),
-  const _Transaction(
-    id: '5',
-    title: 'Withdrawal to Mobile Money',
-    subtitle: 'MTN Mobile Money',
-    amount: 800000,
-    isCredit: false,
-    date: 'Dec 20, 2025',
-    type: TransactionType.withdrawal,
-    status: 'completed',
-  ),
-];
-
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
@@ -88,12 +36,16 @@ class TransactionsScreen extends StatefulWidget {
 
 class _TransactionsScreenState extends State<TransactionsScreen>
     with SingleTickerProviderStateMixin {
+  final _supabase = Supabase.instance.client;
   late TabController _tabController;
+  List<_Transaction> _transactions = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadTransactions();
   }
 
   @override
@@ -102,11 +54,87 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     super.dispose();
   }
 
+  Future<void> _loadTransactions() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final List<_Transaction> result = [];
+
+    try {
+      // Investments made by user (investor)
+      final investments = await _supabase
+          .from('investments')
+          .select('*, projects(title, category)')
+          .eq('investor_id', userId)
+          .order('created_at', ascending: false);
+
+      for (final inv in investments as List) {
+        final project = inv['projects'] as Map<String, dynamic>?;
+        result.add(_Transaction(
+          id: inv['id'] as String,
+          title: 'Investment — ${project?['title'] ?? 'Project'}',
+          subtitle: project?['category'] ?? 'Agriculture',
+          amount: (inv['amount'] as num).toDouble(),
+          isCredit: false,
+          date: _formatDate(inv['created_at'] as String),
+          type: TransactionType.investment,
+          status: inv['status'] as String? ?? 'active',
+        ));
+      }
+
+      // Projects funded (farmer receiving money)
+      final projects = await _supabase
+          .from('projects')
+          .select('id, title, current_amount, status, created_at')
+          .eq('farmer_id', userId)
+          .gt('current_amount', 0)
+          .order('created_at', ascending: false);
+
+      for (final p in projects as List) {
+        final raised = (p['current_amount'] as num).toDouble();
+        if (raised > 0) {
+          result.add(_Transaction(
+            id: 'proj_${p['id']}',
+            title: 'Funding Received — ${p['title']}',
+            subtitle: 'From investors',
+            amount: raised,
+            isCredit: true,
+            date: _formatDate(p['created_at'] as String),
+            type: TransactionType.return_,
+            status: p['status'] as String? ?? 'active',
+          ));
+        }
+      }
+
+      // Sort by date (newest first — here simplified since dates are already sorted per query)
+    } catch (e) {
+      debugPrint('Error loading transactions: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _transactions = result;
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatDate(String isoString) {
+    try {
+      final date = DateTime.parse(isoString).toLocal();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    } catch (_) {
+      return isoString;
+    }
+  }
+
   List<_Transaction> _filtered(String type) {
     if (type == 'all') return _transactions;
-    if (type == 'in') {
-      return _transactions.where((t) => t.isCredit).toList();
-    }
+    if (type == 'in') return _transactions.where((t) => t.isCredit).toList();
     return _transactions.where((t) => !t.isCredit).toList();
   }
 
@@ -116,80 +144,71 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final totalIn = _transactions
-        .where((t) => t.isCredit)
-        .fold(0.0, (sum, t) => sum + t.amount);
-    final totalOut = _transactions
-        .where((t) => !t.isCredit)
-        .fold(0.0, (sum, t) => sum + t.amount);
+    final totalIn = _transactions.where((t) => t.isCredit).fold(0.0, (sum, t) => sum + t.amount);
+    final totalOut = _transactions.where((t) => !t.isCredit).fold(0.0, (sum, t) => sum + t.amount);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Transactions'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() => _isLoading = true);
+              _loadTransactions();
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'All'),
-            Tab(text: 'Money In'),
-            Tab(text: 'Money Out'),
-          ],
+          tabs: const [Tab(text: 'All'), Tab(text: 'Money In'), Tab(text: 'Money Out')],
         ),
       ),
-      body: Column(
-        children: [
-          // Summary
-          Container(
-            color: AppColors.surface,
-            padding: const EdgeInsets.all(16),
-            child: Row(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'Total In',
-                    value: _formatAmount(totalIn),
-                    color: AppColors.success,
-                    icon: Icons.arrow_downward,
+                Container(
+                  color: AppColors.surface,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _SummaryCard(
+                          label: 'Total In',
+                          value: _formatAmount(totalIn),
+                          color: AppColors.success,
+                          icon: Icons.arrow_downward,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          label: 'Total Out',
+                          value: _formatAmount(totalOut),
+                          color: AppColors.error,
+                          icon: Icons.arrow_upward,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
                 Expanded(
-                  child: _SummaryCard(
-                    label: 'Total Out',
-                    value: _formatAmount(totalOut),
-                    color: AppColors.error,
-                    icon: Icons.arrow_upward,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _TransactionList(transactions: _filtered('all'), formatAmount: _formatAmount),
+                      _TransactionList(transactions: _filtered('in'), formatAmount: _formatAmount),
+                      _TransactionList(transactions: _filtered('out'), formatAmount: _formatAmount),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-
-          // Transactions list
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _TransactionList(
-                  transactions: _filtered('all'),
-                  formatAmount: _formatAmount,
-                ),
-                _TransactionList(
-                  transactions: _filtered('in'),
-                  formatAmount: _formatAmount,
-                ),
-                _TransactionList(
-                  transactions: _filtered('out'),
-                  formatAmount: _formatAmount,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -200,12 +219,7 @@ class _SummaryCard extends StatelessWidget {
   final Color color;
   final IconData icon;
 
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.icon,
-  });
+  const _SummaryCard({required this.label, required this.value, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -219,12 +233,8 @@ class _SummaryCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withAlpha(38),
-              shape: BoxShape.circle,
-            ),
+            width: 36, height: 36,
+            decoration: BoxDecoration(color: color.withAlpha(38), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 10),
@@ -233,12 +243,7 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: AppTextStyles.caption),
-                Text(
-                  value,
-                  style: AppTextStyles.labelLarge.copyWith(color: color),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(value, style: AppTextStyles.labelLarge.copyWith(color: color), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -252,56 +257,36 @@ class _TransactionList extends StatelessWidget {
   final List<_Transaction> transactions;
   final String Function(double) formatAmount;
 
-  const _TransactionList({
-    required this.transactions,
-    required this.formatAmount,
-  });
+  const _TransactionList({required this.transactions, required this.formatAmount});
 
   IconData _iconForType(TransactionType type) {
     switch (type) {
-      case TransactionType.investment:
-        return Icons.trending_up;
-      case TransactionType.return_:
-        return Icons.agriculture;
-      case TransactionType.deposit:
-        return Icons.account_balance_wallet;
-      case TransactionType.withdrawal:
-        return Icons.arrow_circle_up;
+      case TransactionType.investment: return Icons.trending_up;
+      case TransactionType.return_: return Icons.agriculture;
+      case TransactionType.deposit: return Icons.account_balance_wallet;
+      case TransactionType.withdrawal: return Icons.arrow_circle_up;
     }
   }
 
   Color _colorForType(TransactionType type) {
     switch (type) {
-      case TransactionType.investment:
-        return AppColors.primary;
-      case TransactionType.return_:
-        return AppColors.success;
-      case TransactionType.deposit:
-        return AppColors.info;
-      case TransactionType.withdrawal:
-        return AppColors.warning;
+      case TransactionType.investment: return AppColors.primary;
+      case TransactionType.return_: return AppColors.success;
+      case TransactionType.deposit: return AppColors.info;
+      case TransactionType.withdrawal: return AppColors.warning;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (transactions.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.receipt_long_outlined,
-              size: 64,
-              color: AppColors.divider,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No transactions',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.divider),
+            SizedBox(height: 16),
+            Text('No transactions yet', style: AppTextStyles.bodyMedium),
           ],
         ),
       );
@@ -313,26 +298,19 @@ class _TransactionList extends StatelessWidget {
       itemBuilder: (context, index) {
         final t = transactions[index];
         final color = _colorForType(t.type);
-
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6)],
           ),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color.withAlpha(26),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                width: 44, height: 44,
+                decoration: BoxDecoration(color: color.withAlpha(26), borderRadius: BorderRadius.circular(12)),
                 child: Icon(_iconForType(t.type), color: color, size: 22),
               ),
               const SizedBox(width: 12),
@@ -340,12 +318,7 @@ class _TransactionList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      t.title,
-                      style: AppTextStyles.labelLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(t.title, style: AppTextStyles.labelLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
                     Text(t.subtitle, style: AppTextStyles.bodySmall),
                     Text(t.date, style: AppTextStyles.caption),
                   ],
@@ -356,25 +329,12 @@ class _TransactionList extends StatelessWidget {
                 children: [
                   Text(
                     '${t.isCredit ? '+' : '-'} ${formatAmount(t.amount)}',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: t.isCredit ? AppColors.success : AppColors.error,
-                    ),
+                    style: AppTextStyles.labelLarge.copyWith(color: t.isCredit ? AppColors.success : AppColors.error),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusActive,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      t.status,
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.statusActiveText,
-                      ),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: AppColors.statusActive, borderRadius: BorderRadius.circular(4)),
+                    child: Text(t.status, style: AppTextStyles.caption.copyWith(color: AppColors.statusActiveText)),
                   ),
                 ],
               ),

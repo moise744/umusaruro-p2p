@@ -2,34 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 
-const _filters = [
-  'All',
-  'Maize',
-  'Coffee',
-  'Tea',
-  'Avocado',
-  'Beans',
-  'Potatoes',
-  'Rice',
-];
+const _filters = ['All', 'Maize', 'Coffee', 'Tea', 'Avocado', 'Beans', 'Potatoes', 'Rice', 'Vegetables', 'Cereals', 'Crop'];
 
 class BrowseProjectsScreen extends ConsumerStatefulWidget {
   const BrowseProjectsScreen({super.key});
 
   @override
-  ConsumerState<BrowseProjectsScreen> createState() =>
-      _BrowseProjectsScreenState();
+  ConsumerState<BrowseProjectsScreen> createState() => _BrowseProjectsScreenState();
 }
 
 class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
   String _selectedFilter = 'All';
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  List<MockProject> _allProjects = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    try {
+      final projects = await ref.read(projectApiServiceProvider).getAllProjects();
+      if (mounted) {
+        setState(() {
+          _allProjects = projects;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -38,15 +51,13 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
   }
 
   List<MockProject> get _filtered {
-    return mockProjects.where((p) {
-      final matchesCrop =
-          _selectedFilter == 'All' || p.cropType == _selectedFilter;
-      final matchesSearch =
-          _searchQuery.isEmpty ||
+    return _allProjects.where((p) {
+      final matchesCrop = _selectedFilter == 'All' || p.cropType.toLowerCase() == _selectedFilter.toLowerCase();
+      final matchesSearch = _searchQuery.isEmpty ||
           p.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           p.farmerName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           p.location.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCrop && matchesSearch && p.status == 'active';
+      return matchesCrop && matchesSearch;
     }).toList();
   }
 
@@ -59,24 +70,23 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: TextField(
               controller: _searchController,
-              onChanged: (v) => setState(() => _searchQuery = v),
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'Search projects, farmers, locations...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
+                hintText: 'Search projects, farmers, locations…',
+                hintStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
                 filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 0,
-                  horizontal: 16,
-                ),
+                fillColor: Colors.white12,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
               ),
+              onChanged: (v) => setState(() => _searchQuery = v),
             ),
           ),
         ),
@@ -84,43 +94,33 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
       body: OfflineBanner(
         child: Column(
           children: [
-            // Filter chips
+            // Category filter chips
             SizedBox(
               height: 48,
-              child: ListView.builder(
+              child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: _filters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final f = _filters[index];
-                  final selected = f == _selectedFilter;
+                  final isSelected = f == _selectedFilter;
                   return GestureDetector(
                     onTap: () => setState(() => _selectedFilter = f),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : AppColors.surface,
+                        color: isSelected ? AppColors.primary : AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color:
-                              selected ? AppColors.primary : AppColors.border,
+                          color: isSelected ? AppColors.primary : AppColors.border,
                         ),
                       ),
                       child: Text(
                         f,
                         style: AppTextStyles.labelMedium.copyWith(
-                          color:
-                              selected ? Colors.white : AppColors.textSecondary,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -128,50 +128,34 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
                 },
               ),
             ),
-
-            // Results count
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Text(
-                    '${_filtered.length} projects found',
-                    style: AppTextStyles.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-
-            // Project list
             Expanded(
-              child:
-                  _filtered.isEmpty
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filtered.isEmpty
                       ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.search_off,
-                              size: 64,
-                              color: AppColors.divider,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No projects found',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.textSecondary,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.search_off, size: 64, color: AppColors.textHint),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No projects found.\nTry a different filter or search.',
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadProjects,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filtered.length,
+                            itemBuilder: (context, index) {
+                              return _ProjectCard(project: _filtered[index]);
+                            },
+                          ),
                         ),
-                      )
-                      : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filtered.length,
-                        itemBuilder: (context, index) {
-                          return _BrowseProjectCard(project: _filtered[index]);
-                        },
-                      ),
             ),
           ],
         ),
@@ -180,9 +164,9 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
   }
 }
 
-class _BrowseProjectCard extends StatelessWidget {
+class _ProjectCard extends StatelessWidget {
   final MockProject project;
-  const _BrowseProjectCard({required this.project});
+  const _ProjectCard({required this.project});
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +174,7 @@ class _BrowseProjectCard extends StatelessWidget {
       onTap: () => context.push('/investor/projects/${project.id}'),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -201,118 +186,75 @@ class _BrowseProjectCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(project.imageIcon, size: 36, color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          project.title,
-                          style: AppTextStyles.headingSmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'by ${project.farmerName}',
-                          style: AppTextStyles.bodySmall,
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 2),
-                            Expanded(
-                              child: Text(
-                                project.location,
-                                style: AppTextStyles.caption,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Icon(project.imageIcon, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '+${project.returnRate}%',
-                          style: AppTextStyles.labelLarge.copyWith(
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'ROI',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textHint,
-                        ),
-                      ),
+                      Text(project.title, style: AppTextStyles.labelLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(project.farmerName, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              LinearPercentIndicator(
-                lineHeight: 8,
-                percent: project.fundingPercent,
-                backgroundColor: AppColors.divider,
-                progressColor: AppColors.primary,
-                barRadius: const Radius.circular(4),
-                padding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${(project.fundingPercent * 100).toStringAsFixed(0)}% of ${project.formattedTarget}',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Text(
-                    '${project.durationMonths} months',
-                    style: AppTextStyles.caption,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => context.push('/investor/projects/${project.id}'),
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 44)),
-                  child: const Text('Invest Now'),
                 ),
-              ),
-            ],
-          ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${project.returnRate.toStringAsFixed(0)}% return',
+                    style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text(project.location, style: AppTextStyles.bodySmall),
+                const Spacer(),
+                const Icon(Icons.schedule_outlined, size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text('${project.durationMonths} months', style: AppTextStyles.bodySmall),
+              ],
+            ),
+            const SizedBox(height: 12),
+            LinearPercentIndicator(
+              lineHeight: 8,
+              percent: project.fundingPercent.clamp(0.0, 1.0),
+              backgroundColor: AppColors.divider,
+              progressColor: AppColors.primary,
+              barRadius: const Radius.circular(4),
+              padding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
+                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary),
+                ),
+                Text(project.formattedTarget, style: AppTextStyles.caption),
+              ],
+            ),
+          ],
         ),
       ),
     );

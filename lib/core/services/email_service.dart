@@ -40,6 +40,31 @@ class EmailService {
       throw Exception('Failed to send email');
     }
   }
+
+  Future<void> sendWelcomeEmail(String recipientEmail, String name) async {
+    final smtpServer = gmail(_username, _password);
+    
+    final message = Message()
+      ..from = Address(_username, 'Umusaruro P2P')
+      ..recipients.add(recipientEmail)
+      ..subject = 'Welcome to Umusaruro P2P!'
+      ..html = '''
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>Welcome aboard, \$name!</h2>
+          <p>Thank you for registering on the Umusaruro P2P platform.</p>
+          <p>We are thrilled to have you join our community of farmers and investors working together to revolutionize agriculture in Rwanda.</p>
+          <p>If you have any questions, feel free to reach out to our support team.</p>
+          <br>
+          <p>Best regards,<br>The Umusaruro Team</p>
+        </div>
+      ''';
+
+    try {
+      await send(message, smtpServer);
+    } catch (e) {
+      print('Welcome email failed (non-critical): \$e');
+    }
+  }
 }
 
 final emailServiceProvider = Provider((ref) => EmailService());

@@ -19,6 +19,7 @@ class InvestorHomeScreen extends ConsumerStatefulWidget {
 
 class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
   final _supabase = Supabase.instance.client;
+  String _firstName = 'Investor';
   List<BarChartGroupData> _chartData = [
     BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
     BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
@@ -27,12 +28,34 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
     BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
     BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
   ];
-  double _totalInvested = 0;
+  double _totalInvested = 0; // used for chart scale
 
   @override
   void initState() {
     super.initState();
     _fetchLiveStats();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final currentUserId = _supabase.auth.currentUser?.id;
+    if (currentUserId == null) return;
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', currentUserId)
+          .maybeSingle();
+
+      if (response != null && mounted) {
+        setState(() {
+          final fullName = response['full_name'] as String;
+          _firstName = fullName.split(' ').first;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching name: $e');
+    }
   }
 
   Future<void> _fetchLiveStats() async {
@@ -104,7 +127,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                               Row(
                                 children: [
                                   Text(
-                                    'Muraho, Investor',
+                                    'Muraho, $_firstName',
                                     style: AppTextStyles.headingLarge.copyWith(
                                       color: Colors.white,
                                     ),
