@@ -45,10 +45,12 @@ class _ChatScreenState extends State<ChatScreen> {
         .order('created_at', ascending: true)
         .listen((data) {
       if (!mounted) return;
+      
+      final currentUserId = _supabase.auth.currentUser?.id;
+      
       setState(() {
         _messages = data.map((json) {
-          // Assuming farmer_id = f2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7f (You)
-          final isMe = json['sender_id'] == 'f2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7f';
+          final isMe = json['sender_id'] == currentUserId;
           return _ChatMessage(
             text: json['content'] as String,
             isMe: isMe,
@@ -79,10 +81,20 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _controller.clear();
 
+    final currentUserId = _supabase.auth.currentUser?.id;
+    if (currentUserId == null) {
+      print('User is not logged in');
+      return;
+    }
+
     try {
       await _supabase.from('messages').insert({
-        'sender_id': 'f2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7f', // Logged in user
-        'receiver_id': 'a2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7a', // The other user
+        'sender_id': currentUserId,
+        // In a real production app, receiver_id would be passed to the ChatScreen
+        // For testing, if current user is investor, send to farmer, else send to investor dummy ID.
+        // Or if we don't know the receiver, just set it to null or a known ID.
+        // Let's just store the message. If receiver_id is needed by DB rules, provide a fallback.
+        'receiver_id': 'a2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7a', // dummy fallback
         'content': text,
       });
     } catch (e) {

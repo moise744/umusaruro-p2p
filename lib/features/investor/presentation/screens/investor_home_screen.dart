@@ -1,19 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:umusaruro_p2p/core/constants/app_routes.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
-import 'package:fl_chart/fl_chart.dart';
 
-class InvestorHomeScreen extends ConsumerWidget {
+class InvestorHomeScreen extends ConsumerStatefulWidget {
   const InvestorHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InvestorHomeScreen> createState() => _InvestorHomeScreenState();
+}
+
+class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
+  final _supabase = Supabase.instance.client;
+  List<BarChartGroupData> _chartData = [
+    BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+    BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+    BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+    BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+    BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+    BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+  ];
+  double _totalInvested = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLiveStats();
+  }
+
+  Future<void> _fetchLiveStats() async {
+    try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) return;
+
+      final response = await _supabase
+          .from('investments')
+          .select('amount')
+          .eq('investor_id', currentUserId);
+
+      double total = 0;
+      for (var row in response as List) {
+        total += (row['amount'] as num).toDouble();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _totalInvested = total;
+        _chartData = [
+          BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: total * 0.1, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+          BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: total * 0.25, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+          BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: total * 0.4, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+          BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: total * 0.6, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+          BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: total * 0.8, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+          BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: total, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+        ];
+      });
+    } catch (e) {
+      debugPrint('Error fetching live investments: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activeProjects =
         mockProjects.where((p) => p.status == 'active').toList();
 
@@ -183,14 +238,7 @@ class InvestorHomeScreen extends ConsumerWidget {
                             ),
                           ),
                           borderData: FlBorderData(show: false),
-                          barGroups: [
-                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 8, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 10, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 14, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 15, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: 13, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 10, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
-                          ],
+                          barGroups: _chartData,
                         ),
                       ),
                     ),

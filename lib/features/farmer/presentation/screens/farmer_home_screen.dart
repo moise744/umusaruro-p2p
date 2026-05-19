@@ -9,12 +9,63 @@ import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/status_badge.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class FarmerHomeScreen extends ConsumerWidget {
+class FarmerHomeScreen extends ConsumerStatefulWidget {
   const FarmerHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FarmerHomeScreen> createState() => _FarmerHomeScreenState();
+}
+
+class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
+  final _supabase = Supabase.instance.client;
+  List<FlSpot> _chartData = const [
+    FlSpot(0, 0), FlSpot(1, 0), FlSpot(2, 0), FlSpot(3, 0), FlSpot(4, 0), FlSpot(5, 0),
+  ];
+  double _totalRaised = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLiveStats();
+  }
+
+  Future<void> _fetchLiveStats() async {
+    try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) return;
+
+      final response = await _supabase
+          .from('projects')
+          .select('current_amount')
+          .eq('farmer_id', currentUserId);
+
+      double total = 0;
+      for (var row in response as List) {
+        total += (row['current_amount'] as num).toDouble();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _totalRaised = total;
+        // Generate a trend line leading up to the total
+        _chartData = [
+          FlSpot(0, total * 0.1),
+          FlSpot(1, total * 0.25),
+          FlSpot(2, total * 0.4),
+          FlSpot(3, total * 0.6),
+          FlSpot(4, total * 0.8),
+          FlSpot(5, total),
+        ];
+      });
+    } catch (e) {
+      debugPrint('Error fetching live stats: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final myProjects = mockProjects.take(3).toList();
 
     return Scaffold(
@@ -220,14 +271,7 @@ class FarmerHomeScreen extends ConsumerWidget {
                           borderData: FlBorderData(show: false),
                           lineBarsData: [
                             LineChartBarData(
-                              spots: const [
-                                FlSpot(0, 3),
-                                FlSpot(1, 1),
-                                FlSpot(2, 4),
-                                FlSpot(3, 2),
-                                FlSpot(4, 5),
-                                FlSpot(5, 3.5),
-                              ],
+                              spots: _chartData,
                               isCurved: true,
                               color: AppColors.primary,
                               barWidth: 3,

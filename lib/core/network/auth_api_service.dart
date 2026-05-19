@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class AuthSession {
   final String? token;
   final String? role;
@@ -7,18 +9,35 @@ class AuthSession {
 }
 
 class AuthApiService {
-  static const _mockToken = 'mock_jwt_token';
+  final _supabase = Supabase.instance.client;
 
   Future<AuthSession> login({
     required String email,
     required String password,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    return AuthSession(
-      token: _mockToken,
-      role: _roleForEmail(email),
-      message: 'Signed in with mock data.',
-    );
+    try {
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      // Fetch role from the users table
+      final userResponse = await _supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .single();
+
+      final role = userResponse['role'] as String?;
+
+      return AuthSession(
+        token: response.session?.accessToken,
+        role: role ?? 'farmer', // Default fallback
+        message: 'Signed in successfully.',
+      );
+    } catch (e) {
+      throw Exception('Failed to sign in: \$e');
+    }
   }
 
   Future<AuthSession> register({
@@ -28,23 +47,37 @@ class AuthApiService {
     required String password,
     required String role,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    return AuthSession(
-      token: _mockToken,
-      role: _normalizeRole(role),
-      message: 'Account created with mock data.',
-    );
-  }
+    try {
+      // 1. Sign up with Supabase Auth
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
 
-  String? _roleForEmail(String email) {
-    final normalized = email.toLowerCase();
-    if (normalized.contains('leader') || normalized.contains('cell')) {
-      return 'cell_leader';
+      final userId = response.user?.id;
+      if (userId == null) {
+        throw Exception('User creation failed');
+      }
+
+      // 2. Insert into users table (use the auth ID so they link)
+      await _supabase.from('users').insert({
+        'id': userId,
+        'email': email,
+        'password_hash': 'managed_by_supabase',
+        'full_name': fullName,
+        'role': _normalizeRole(role) ?? 'farmer',
+        'location': 'Not provided',
+        'is_verified': true, // Auto-verify for prototype
+      });
+
+      return AuthSession(
+        token: response.session?.accessToken,
+        role: _normalizeRole(role),
+        message: 'Account created successfully.',
+      );
+    } catch (e) {
+      throw Exception('Failed to register: \$e');
     }
-    if (normalized.contains('investor')) {
-      return 'investor';
-    }
-    return 'farmer';
   }
 
   String? _normalizeRole(String? role) {
