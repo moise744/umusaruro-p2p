@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
@@ -42,11 +43,21 @@ class _InvestFlowScreenState extends ConsumerState<InvestFlowScreen> {
 
   Future<void> _onConfirm() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _isLoading = false;
-      _step = _InvestStep.success;
-    });
+    try {
+      await ref.read(projectApiServiceProvider).investInProject(widget.project.id, _enteredAmount);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _step = _InvestStep.success;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Investment failed: $e')),
+        );
+      }
+    }
   }
 
   @override

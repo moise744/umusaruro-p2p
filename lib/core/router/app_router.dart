@@ -20,6 +20,7 @@ import 'package:umusaruro_p2p/features/farmer/presentation/screens/create_projec
 import 'package:umusaruro_p2p/features/cell_leader/presentation/screens/cell_leader_home_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/investor_home_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/browse_projects_screen.dart';
+import 'package:umusaruro_p2p/features/investor/presentation/screens/portfolio_screen.dart';
 import 'package:umusaruro_p2p/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:umusaruro_p2p/features/messages/presentation/screens/messages_screen.dart';
 import 'package:umusaruro_p2p/features/messages/presentation/screens/chat_screen.dart';
@@ -124,6 +125,18 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: AppRoutes.browseProjects,
             builder: (context, state) => const BrowseProjectsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.portfolio,
+            builder: (context, state) => const PortfolioScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.investorMessages,
+            builder: (context, state) => const MessagesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.investorProfile,
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),
@@ -307,8 +320,8 @@ class InvestorShell extends StatelessWidget {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith(AppRoutes.browseProjects)) return 1;
     if (location.startsWith(AppRoutes.portfolio)) return 2;
-    if (location.startsWith(AppRoutes.messages)) return 3;
-    if (location.startsWith(AppRoutes.profile)) return 4;
+    if (location.startsWith(AppRoutes.investorMessages)) return 3;
+    if (location.startsWith(AppRoutes.investorProfile)) return 4;
     return 0;
   }
 
@@ -324,10 +337,10 @@ class InvestorShell extends StatelessWidget {
         context.go(AppRoutes.portfolio);
         return;
       case 3:
-        context.go(AppRoutes.messages);
+        context.go(AppRoutes.investorMessages);
         return;
       case 4:
-        context.go(AppRoutes.profile);
+        context.go(AppRoutes.investorProfile);
         return;
     }
   }

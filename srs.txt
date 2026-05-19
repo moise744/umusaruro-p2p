@@ -1,0 +1,841 @@
+Here is the **full, enhanced, and comprehensive SRS (Software Requirements Specification)** for **Umusaruro P2P** — written to stand out, be investor-ready, developer-ready, and technically powerful for a Flutter mobile app:
+
+---
+
+# 🌱 UMUSARURO P2P — SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
+### Flutter Mobile Application | Version 2.0 | Advanced & Production-Grade
+
+---
+
+## DOCUMENT CONTROL
+
+| Field | Detail |
+|---|---|
+| Product Name | Umusaruro P2P |
+| Platform | Flutter (Android & iOS) |
+| Document Type | Software Requirements Specification (SRS) |
+| Version | 2.0 — Advanced Edition |
+| Audience | Developers, Designers, Investors, Stakeholders |
+| Status | Active Development |
+
+---
+
+## TABLE OF CONTENTS
+
+1. Executive Summary
+2. Vision & Strategic Goals
+3. User Personas & Roles
+4. System Architecture Overview
+5. Feature Requirements (Functional)
+6. Non-Functional Requirements
+7. Data Models & Entities
+8. Screens & Navigation Map
+9. Advanced Feature Specifications
+10. Security & Compliance
+11. Third-Party Integrations
+12. Offline-First Strategy
+13. AI & Automation Layer
+14. Monetization & Business Logic
+15. Testing Requirements
+16. Appendix & Glossary
+
+---
+
+## 1. EXECUTIVE SUMMARY
+
+**Umusaruro P2P** (meaning "Harvest" in Kinyarwanda) is a next-generation, peer-to-peer agricultural investment and farm management platform built entirely in Flutter. It digitally connects smallholder farmers in rural communities with a growing class of retail micro-investors who want to participate directly in agricultural value chains.
+
+The platform eliminates the friction of traditional agricultural financing by replacing bank collateral requirements with community-based verification, replacing opaque loan agreements with transparent investment contracts, and replacing manual harvest reporting with digitally logged, verifiable yield data.
+
+**What makes Umusaruro P2P stand out:**
+- Community-led verification by local Cell Leaders (unique trust layer)
+- Real-time P2P investment with live funding progress tracking
+- End-to-end harvest lifecycle management inside a single app
+- Built-in encrypted messaging between farmers and investors
+- Designed offline-first for rural connectivity realities
+- AI-powered harvest yield prediction and fraud detection
+- Multi-currency support including Mobile Money (MoMo), MTN, Airtel
+
+---
+
+## 2. VISION & STRATEGIC GOALS
+
+### 2.1 Mission Statement
+To democratize agricultural finance by building a trusted, transparent, and technology-powered bridge between farmers who need capital and investors who want impact-driven returns.
+
+### 2.2 Strategic Goals
+
+**Goal 1 — Financial Inclusion:** Enable farmers with zero banking history to access project funding within 72 hours of cell leader verification.
+
+**Goal 2 — Investor Confidence:** Give every investor a real-time, auditable view of their portfolio including fund usage, farm activity updates, and expected ROI timelines.
+
+**Goal 3 — Community Trust:** Build a decentralized reputation system where cell leaders, farmers, and investors all earn trust scores that improve their platform standing over time.
+
+**Goal 4 — Scalability:** Design the system to scale from a single district to a national and eventually pan-African deployment, supporting multiple languages (Kinyarwanda, French, English, Swahili).
+
+**Goal 5 — Data Sovereignty:** All farmer data is owned by the farmer. Investors see only what is explicitly shared. No third-party data selling.
+
+---
+
+## 3. USER PERSONAS & ROLES
+
+### 3.1 Role: FARMER
+
+**Who they are:** Smallholder or mid-scale farmer, typically aged 22–55, with 1–10 hectares of farmland. May be semi-literate; relies heavily on visual UI and voice-assisted features.
+
+**Their core needs:**
+- Fast, low-friction project creation (under 10 minutes)
+- Clear visibility of how much funding has been received
+- Simple harvest reporting (photo upload + weight input)
+- Direct communication with their investors
+- Offline access to all their active project data
+
+**Permissions & Capabilities:**
+- Create, edit, pause, or archive farming projects
+- Upload land photos, certificates, and soil reports
+- Submit weekly farming activity updates (text + photo)
+- Log harvest yield and trigger payout calculation
+- Message any investor who has funded their project
+- View full transaction history (received funds, payouts sent)
+- Access personal reputation score and badge history
+
+**Account States:** `Unverified → Identity Verified → Cell Leader Approved → Active`
+
+---
+
+### 3.2 Role: INVESTOR
+
+**Who they are:** Urban professional, diaspora investor, or impact-focused individual aged 20–60. Comfortable with mobile apps. May invest in multiple projects simultaneously.
+
+**Their core needs:**
+- A curated, trustworthy marketplace of verified projects
+- Portfolio dashboard showing live ROI tracking
+- Transparent communication with farmers
+- Secure, traceable investment and return transactions
+- Notifications at every key milestone
+
+**Permissions & Capabilities:**
+- Browse and filter all verified, live investment projects
+- Invest any amount within a project's minimum/maximum range
+- View real-time funding progress per project
+- Receive push notifications on farm activity updates
+- Access full investment ledger with expected return dates
+- Withdraw returns to registered mobile money or bank account
+- Rate and review farmers after project completion
+- Bookmark projects to a personal watchlist
+
+**Account States:** `Registered → KYC Verified → Active Investor`
+
+---
+
+### 3.3 Role: CELL LEADER (VERIFIER)
+
+**Who they are:** Elected or appointed local administrative official. Acts as the trust anchor for the system. Knows farmers personally and can verify land ownership physically.
+
+**Their core needs:**
+- Simple, guided verification workflow
+- Ability to raise flags or report suspicious projects
+- A log of all verifications they have performed
+
+**Permissions & Capabilities:**
+- Receive verification requests from farmers in their cell
+- Review farmer profile, submitted land documents, and GPS coordinates
+- Approve, reject, or request more information on a project
+- Attach a digital signature and official notes to verification
+- Revoke verification if fraud is later discovered
+- View history of all verified projects and their current status
+- Cannot invest or create projects (conflict of interest prevention)
+
+**Account States:** `Nominated → Identity Verified by Admin → Active Verifier`
+
+---
+
+### 3.4 Role: PLATFORM ADMIN (Back-end / CMS)
+
+**Who they are:** Umusaruro operations team member managing the system health, compliance, and disputes.
+
+**Capabilities:**
+- Onboard, suspend, or ban any user account
+- Resolve disputes between farmers and investors
+- View full platform analytics (active projects, funds in circulation, defaults)
+- Manually trigger or block payouts
+- Manage Cell Leader appointments
+- Access audit logs for all financial transactions
+
+---
+
+## 4. SYSTEM ARCHITECTURE OVERVIEW
+
+### 4.1 Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile App | Flutter 3.x (Dart) |
+| State Management | Riverpod + AsyncNotifier |
+| Local Storage | Hive + Isar (for structured offline data) |
+| Backend | superbase (Auth, Firestore, Storage, Functions) OR Supabase (preferred for SQL) |
+| Real-Time Chat | superbase Realtime Database OR Stream Chat SDK |
+| Push Notifications | superbase Cloud Messaging (FCM) |
+| Payment Gateway | MTN Mobile Money API, Airtel Money API, Flutterwave |
+| Maps & GPS | Google Maps Flutter Plugin |
+| AI / ML | Google ML Kit (on-device) + OpenAI API (server-side predictions) |
+| Analytics | superbase Analytics + Mixpanel |
+| Crash Reporting | Sentry or superbase Crashlytics |
+| CI/CD | GitHub Actions + Fastlane |
+
+### 4.2 Architecture Pattern
+The app follows **Clean Architecture** with three distinct layers:
+
+- **Presentation Layer:** Flutter Widgets, Screens, ViewModels (Riverpod Providers)
+- **Domain Layer:** Use Cases, Entities, Repository Interfaces
+- **Data Layer:** Remote Data Sources (API/superbase), Local Data Sources (Hive/Isar), Repository Implementations
+
+### 4.3 Core Principles
+- **Offline-First:** All reads served from local cache. Writes queued and synced when online.
+- **Reactive UI:** All state updates propagate instantly using streams and providers.
+- **Modular Codebase:** Each feature (auth, projects, chat, wallet) is an isolated module.
+- **Security by Default:** No sensitive data stored in plain text. All API keys in secure environment files.
+
+---
+
+## 5. FEATURE REQUIREMENTS (FUNCTIONAL)
+
+### MODULE 1: AUTHENTICATION & ONBOARDING
+
+**F-AUTH-01:** The app shall present a splash screen with the Umusaruro logo and animated tagline for 2–3 seconds before routing based on auth state.
+
+**F-AUTH-02:** First-time users shall see an interactive onboarding carousel (3–5 slides) explaining the platform in Kinyarwanda and English with illustrations.
+
+**F-AUTH-03:** Users shall register with a phone number (OTP-verified via SMS), email address (optional), full name, national ID number, and role selection (Farmer / Investor).
+
+**F-AUTH-04:** Phone OTP verification shall be completed within 60 seconds with a resend option after 30 seconds.
+
+**F-AUTH-05:** After OTP, users shall set a 6-digit PIN for in-app transaction authorization (distinct from login password).
+
+**F-AUTH-06:** Biometric login (fingerprint / Face ID) shall be available after first successful PIN login.
+
+**F-AUTH-07:** Farmers shall complete an extended profile including: district/sector/cell location, farming experience (years), land size (hectares), primary crops grown, and a profile photo.
+
+**F-AUTH-08:** Investors shall complete KYC by uploading a national ID or passport photo (front and back). KYC review status shall be shown as a progress indicator.
+
+**F-AUTH-09:** Cell Leaders are appointed by admins only. They receive a system-generated invite link to register under the Cell Leader role.
+
+**F-AUTH-10:** The system shall enforce account lockout after 5 consecutive failed PIN attempts, requiring OTP re-verification to unlock.
+
+---
+
+### MODULE 2: FARMER — PROJECT MANAGEMENT
+
+**F-PROJ-01:** A Farmer shall create a new farming project through a guided, multi-step form wizard (5 steps, progress bar shown).
+
+**Step 1 — Project Basics:**
+- Project name (e.g., "Season A Maize Farm — Musanze")
+- Crop type (dropdown with icons: Maize, Potato, Beans, Rice, Wheat, Other)
+- Season (A, B, C) and planting start date
+- Expected harvest date (calendar picker)
+
+**Step 2 — Location:**
+- District, Sector, Cell (cascading dropdowns pre-loaded from Rwanda administrative data)
+- GPS pin drop on embedded Google Map
+- Land size in hectares (numeric slider + input)
+- Option to upload land ownership certificate (PDF/image)
+
+**Step 3 — Financial Details:**
+- Total funding needed (RWF)
+- Minimum investment per investor (RWF)
+- Maximum investment per investor (RWF, optional)
+- Expected total return percentage (e.g., 20% above capital)
+- Profit sharing model: Pro-rata based on investment share
+
+**Step 4 — Evidence Upload:**
+- Up to 6 land photos (enforced minimum: 2)
+- Optional: previous season's harvest receipt (for experienced farmers)
+- Optional: soil test report
+
+**Step 5 — Review & Submit:**
+- Full summary of all entered data
+- Terms & Conditions checkbox
+- Submit for Cell Leader verification
+
+**F-PROJ-02:** After submission, the project status becomes `PENDING_VERIFICATION`. The farmer receives a push notification and in-app confirmation.
+
+**F-PROJ-03:** Farmers shall be able to edit projects only while in `PENDING_VERIFICATION` or `DRAFT` status.
+
+**F-PROJ-04:** Farmers shall view all their projects on a "My Projects" screen with filterable status tabs: All / Draft / Pending / Active / Funded / Harvested / Completed.
+
+**F-PROJ-05:** Each project card shall display: project name, crop icon, funding progress bar (% and RWF), days remaining to funding deadline, and current status badge.
+
+**F-PROJ-06:** Farmers shall post "Farm Updates" (text + up to 3 photos) on any active project. Updates are visible to all investors of that project.
+
+**F-PROJ-07:** Farmers shall submit harvest data including: actual harvest yield in kilograms, sale price per kilogram, total revenue generated, and up to 5 harvest photos. The system auto-calculates investor returns.
+
+**F-PROJ-08:** If a project fails to reach 100% funding by its deadline, the system shall automatically refund all invested amounts to investors with zero deductions.
+
+---
+
+### MODULE 3: CELL LEADER — VERIFICATION WORKFLOW
+
+**F-VERIF-01:** Cell Leaders receive a push notification immediately when a farmer in their assigned cell submits a project for verification.
+
+**F-VERIF-02:** The verification screen shall display all project details submitted by the farmer including embedded map with GPS coordinates and all uploaded photos in a scrollable gallery.
+
+**F-VERIF-03:** The Cell Leader shall have three actions: **Approve**, **Request More Info**, or **Reject**.
+
+**F-VERIF-04:** All three actions require a mandatory written note (minimum 20 characters) explaining the decision.
+
+**F-VERIF-05:** Upon approval, the project status changes to `ACTIVE` and it immediately appears in the Investor marketplace. The farmer is notified instantly.
+
+**F-VERIF-06:** Upon rejection, the farmer is notified with the Cell Leader's reason. The farmer may correct and resubmit. Maximum 2 resubmissions per project.
+
+**F-VERIF-07:** The Cell Leader's verification dashboard shall show: pending requests (sorted by submission date), completed verifications this month, and their personal verification track record (approval rate, flagged projects).
+
+**F-VERIF-08:** Cell Leaders shall be able to mark a previously verified project as "Under Investigation" if fraud is suspected post-approval, which temporarily pauses new investments.
+
+---
+
+### MODULE 4: INVESTOR — MARKETPLACE & INVESTMENTS
+
+**F-INV-01:** The marketplace screen shall display all `ACTIVE` projects in a card-based feed with infinite scroll.
+
+**F-INV-02:** Each project card shall show: crop photo, farmer name, location, funding progress bar, % funded, RWF needed, expected ROI %, and days left to invest.
+
+**F-INV-03:** Investors shall filter projects by: crop type, location (district), funding stage (early / mid / nearly full), expected return range, and time to harvest.
+
+**F-INV-04:** Investors shall sort projects by: newest, highest return, closest to funding goal, shortest harvest timeline.
+
+**F-INV-05:** Tapping a project opens a full Project Detail Screen showing all farmer-submitted information, Cell Leader verification badge and notes, all farm photos in a swipeable gallery, a funding breakdown chart, investor list (anonymous or named by preference), and all farm update posts.
+
+**F-INV-06:** The investment flow shall be: Enter Amount → Review Summary → Enter 6-digit PIN → Confirm → Payment Processing → Success Screen with confetti animation.
+
+**F-INV-07:** Investors shall be able to invest in a project multiple times as long as the project is still in `ACTIVE` status and they have not exceeded the project's maximum investment cap.
+
+**F-INV-08:** The investor's portfolio dashboard shall display: total amount invested (all time), total active investments, total returns received, ROI percentage across all completed projects, and a pie chart of investment distribution by crop type.
+
+**F-INV-09:** Investors shall have a "Watchlist" feature to save projects they want to track before investing.
+
+**F-INV-10:** When a farm update is posted by a farmer, all investors who have funded that project receive a push notification with a preview.
+
+---
+
+### MODULE 5: REAL-TIME MESSAGING
+
+**F-CHAT-01:** Once an investor funds a project, a dedicated chat thread is automatically created between that investor and the farmer.
+
+**F-CHAT-02:** The chat screen shall support: text messages, image attachments (camera or gallery), and voice notes (up to 60 seconds).
+
+**F-CHAT-03:** Messages shall display sent, delivered, and read receipts.
+
+**F-CHAT-04:** The chat shall display a "Project Context Bar" at the top showing the project name, crop, and funding status so both parties always know which project the conversation is about.
+
+**F-CHAT-05:** Farmers who have multiple investors shall see a "Messages" screen showing all their active conversation threads, sorted by most recent message.
+
+**F-CHAT-06:** All messages shall be end-to-end encrypted. Message content shall never be stored in plain text on the server.
+
+**F-CHAT-07:** Users shall be able to report abusive messages. Reported chats are flagged for Admin review. Repeat offenders face automatic account suspension.
+
+**F-CHAT-08:** The platform shall display a "Smart Reply" suggestion bar with contextual quick responses (e.g., "When do you expect to harvest?" / "The crops are doing well, thank you!").
+
+---
+
+### MODULE 6: WALLET & TRANSACTIONS
+
+**F-WALLET-01:** Every user (Farmer and Investor) has a platform wallet displaying their available balance.
+
+**F-WALLET-02:** Investors can top up their wallet via: MTN Mobile Money, Airtel Money, Bank Transfer (via Flutterwave), or debit card.
+
+**F-WALLET-03:** When an investor invests, funds move from their wallet to a project escrow account. The project escrow is released to the farmer upon reaching 100% funding.
+
+**F-WALLET-04:** The transaction history screen shall display: date, time, transaction type (Top-up / Investment / Return / Withdrawal / Refund), amount, status (Completed / Pending / Failed), and a reference ID.
+
+**F-WALLET-05:** When a farmer submits harvest data and the platform admin approves the payout, the investor's proportional return is auto-credited to their wallet.
+
+**F-WALLET-06:** Withdrawals to mobile money shall process within 24 hours. Users receive an SMS and push notification upon completion.
+
+**F-WALLET-07:** All financial actions (invest, withdraw) require 6-digit PIN authorization.
+
+**F-WALLET-08:** The platform shall charge a transaction fee of X% (configurable by admin) on investor returns only — never on principal. Farmers pay a platform commission of Y% on harvest revenue (configurable).
+
+---
+
+### MODULE 7: NOTIFICATIONS
+
+**F-NOTIF-01:** Push notifications shall be sent for: new project verification request (Cell Leader), project approved / rejected (Farmer), project fully funded (Farmer), new investment received (Farmer), farm update posted (Investor), harvest submitted (Investor), return credited (Investor), new message received (All), system announcements (All).
+
+**F-NOTIF-02:** In-app notification bell icon shall show unread count badge.
+
+**F-NOTIF-03:** The notifications screen shall show all past notifications with timestamp, categorized as: Financial, Project, Messages, System.
+
+**F-NOTIF-04:** Users shall manage notification preferences per category in Settings.
+
+---
+
+## 6. NON-FUNCTIONAL REQUIREMENTS
+
+### 6.1 Performance
+
+**NFR-PERF-01:** App cold start time shall be under 3 seconds on a mid-range Android device (2GB RAM, Android 10+).
+
+**NFR-PERF-02:** The marketplace feed shall load within 1.5 seconds on a 3G connection.
+
+**NFR-PERF-03:** Chat messages shall be delivered and displayed within 500ms on a 4G connection.
+
+**NFR-PERF-04:** All screens shall maintain a minimum 60fps frame rate. Jank frames (>16ms) shall not exceed 1% of total frames.
+
+**NFR-PERF-05:** Image assets shall be compressed and lazy-loaded. No image exceeding 500KB shall be stored or displayed without compression.
+
+### 6.2 Reliability
+
+**NFR-REL-01:** The platform backend shall maintain 99.5% uptime per month (excluding planned maintenance).
+
+**NFR-REL-02:** All financial transactions shall be atomic. Partial transaction states are not allowed. Failed transactions must be fully rolled back.
+
+**NFR-REL-03:** The app shall handle network drops gracefully without crashing. Offline state triggers a non-blocking banner.
+
+### 6.3 Scalability
+
+**NFR-SCALE-01:** The system shall support up to 100,000 concurrent users without degradation in API response times.
+
+**NFR-SCALE-02:** The database shall be architected to support horizontal scaling (sharding by district/region for future national rollout).
+
+### 6.4 Usability
+
+**NFR-USE-01:** The app shall achieve a System Usability Scale (SUS) score of at least 75 in user testing.
+
+**NFR-USE-02:** All primary user tasks (create project, invest, send message) shall be completable in under 5 taps from the dashboard.
+
+**NFR-USE-03:** The app shall support Kinyarwanda as the default language, with English and French as selectable alternatives. All UI strings shall be fully localized using Flutter's `intl` package.
+
+**NFR-USE-04:** The app shall comply with WCAG 2.1 AA accessibility standards: minimum contrast ratio 4.5:1, all interactive elements tappable with minimum 48×48dp touch targets, screen reader (TalkBack/VoiceOver) compatible.
+
+### 6.5 Security
+
+**NFR-SEC-01:** All API communications shall use HTTPS/TLS 1.3.
+
+**NFR-SEC-02:** Sensitive data (PIN, national ID number) shall never be stored in device SharedPreferences or plain local storage. Use Flutter Secure Storage (Keychain / Keystore).
+
+**NFR-SEC-03:** The app shall implement certificate pinning to prevent man-in-the-middle attacks.
+
+**NFR-SEC-04:** All financial operations shall require re-authentication (PIN or biometric) regardless of active session status.
+
+**NFR-SEC-05:** Session tokens shall expire after 7 days of inactivity. Refresh tokens expire after 30 days.
+
+---
+
+## 7. DATA MODELS & ENTITIES
+
+### 7.1 User Entity
+```
+User {
+  id: String (UUID)
+  phone: String (E.164 format)
+  email: String? (optional)
+  fullName: String
+  nationalId: String (encrypted)
+  role: Enum [FARMER, INVESTOR, CELL_LEADER, ADMIN]
+  profilePhotoUrl: String?
+  walletBalance: double
+  reputationScore: int (0–100)
+  kycStatus: Enum [PENDING, VERIFIED, REJECTED]
+  cellId: String? (for Cell Leaders and Farmers)
+  isActive: bool
+  createdAt: DateTime
+  lastLoginAt: DateTime
+}
+```
+
+### 7.2 Project Entity
+```
+Project {
+  id: String (UUID)
+  farmerId: String (ref: User)
+  cellLeaderId: String? (ref: User)
+  title: String
+  cropType: Enum [MAIZE, POTATO, BEANS, RICE, WHEAT, OTHER]
+  season: Enum [A, B, C]
+  plantingDate: DateTime
+  expectedHarvestDate: DateTime
+  locationDistrict: String
+  locationSector: String
+  locationCell: String
+  gpsLat: double
+  gpsLng: double
+  landSizeHectares: double
+  fundingGoal: double (RWF)
+  fundingRaised: double (RWF)
+  minInvestment: double
+  maxInvestment: double?
+  expectedReturnPercent: double
+  photoUrls: List<String>
+  documentUrls: List<String>
+  status: Enum [DRAFT, PENDING_VERIFICATION, ACTIVE, FULLY_FUNDED, HARVESTING, COMPLETED, FAILED, FLAGGED]
+  verificationNote: String?
+  verifiedAt: DateTime?
+  fundingDeadline: DateTime
+  harvestYieldKg: double?
+  harvestRevenue: double?
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+```
+
+### 7.3 Investment Entity
+```
+Investment {
+  id: String (UUID)
+  projectId: String (ref: Project)
+  investorId: String (ref: User)
+  amountInvested: double
+  sharePercent: double (auto-calculated)
+  expectedReturn: double (auto-calculated)
+  actualReturn: double?
+  status: Enum [ACTIVE, RETURNED, REFUNDED, DEFAULTED]
+  investedAt: DateTime
+  returnedAt: DateTime?
+}
+```
+
+### 7.4 Transaction Entity
+```
+Transaction {
+  id: String (UUID)
+  userId: String (ref: User)
+  type: Enum [TOP_UP, INVESTMENT, RETURN, WITHDRAWAL, REFUND, FEE]
+  amount: double
+  fee: double (platform fee if applicable)
+  referenceId: String (external payment ref)
+  projectId: String? (if linked to a project)
+  status: Enum [PENDING, COMPLETED, FAILED]
+  paymentMethod: Enum [MTN_MOMO, AIRTEL_MONEY, BANK_TRANSFER, CARD]
+  createdAt: DateTime
+  completedAt: DateTime?
+}
+```
+
+### 7.5 Message Entity
+```
+Message {
+  id: String (UUID)
+  chatThreadId: String
+  senderId: String (ref: User)
+  contentType: Enum [TEXT, IMAGE, VOICE_NOTE]
+  content: String (encrypted)
+  mediaUrl: String? (encrypted URL)
+  durationSeconds: int? (for voice notes)
+  status: Enum [SENT, DELIVERED, READ]
+  sentAt: DateTime
+}
+```
+
+### 7.6 FarmUpdate Entity
+```
+FarmUpdate {
+  id: String (UUID)
+  projectId: String (ref: Project)
+  farmerId: String (ref: User)
+  text: String
+  photoUrls: List<String>
+  postedAt: DateTime
+}
+```
+
+---
+
+## 8. SCREENS & NAVIGATION MAP
+
+### 8.1 Public Screens (Pre-Auth)
+- Splash Screen
+- Onboarding Carousel (3 slides)
+- Welcome Screen (Login / Register)
+- Phone Number Entry + OTP Verification
+- Role Selection Screen
+- Farmer Extended Profile Setup
+- Investor Profile Setup
+- KYC Document Upload Screen
+
+### 8.2 Farmer Screens (Bottom Nav: Dashboard / Projects / Messages / Wallet / Profile)
+- Farmer Dashboard (active projects summary, funds raised, quick actions)
+- My Projects List (with status filter tabs)
+- Project Detail View (farmer perspective — funding progress, investor list, update feed)
+- Create Project Wizard (5-step form)
+- Submit Harvest Screen
+- Post Farm Update Screen
+- Farmer Wallet & Transaction History
+- Chat Thread List + Individual Chat Screen
+- Farmer Profile & Settings
+- Notifications Screen
+
+### 8.3 Investor Screens (Bottom Nav: Explore / Portfolio / Messages / Wallet / Profile)
+- Investor Dashboard (total invested, active projects, total returns)
+- Marketplace / Browse Projects (filter + sort + search)
+- Project Detail Screen (investor perspective — full project info + invest CTA)
+- Investment Flow (amount → confirm → PIN → success)
+- My Portfolio (all investments with live status)
+- Watchlist Screen
+- Investor Wallet & Transaction History
+- Chat Thread List + Individual Chat Screen
+- Investor Profile & Settings
+- Notifications Screen
+
+### 8.4 Cell Leader Screens (Bottom Nav: Pending / History / Profile)
+- Cell Leader Dashboard (pending count, completed this month)
+- Verification Request Detail (full project info + approve/reject/info actions)
+- Verification History List
+- Cell Leader Profile & Settings
+- Notifications Screen
+
+---
+
+## 9. ADVANCED FEATURE SPECIFICATIONS
+
+### 9.1 Reputation & Trust Score System
+
+Every user accumulates a **Trust Score (0–100)** that is displayed on their profile and project listings.
+
+**Farmer Trust Score is influenced by:**
+- Number of completed projects (+ points)
+- On-time harvest submissions (+ points)
+- Investor ratings received after project completion (+ points)
+- Late or missing updates (- points)
+- Projects that defaulted without reason (- severe penalty)
+- Cell Leader verification badge (+ bonus)
+
+**Investor Trust Score is influenced by:**
+- Total invested (all time)
+- Investment completion rate (vs. abandoned carts)
+- Respectful communication score (from farmer feedback)
+
+**Trust Score Tiers:** Bronze (0–40) / Silver (41–65) / Gold (66–85) / Platinum (86–100)
+
+Platinum farmers get featured placement in the marketplace. Platinum investors get early access to new projects.
+
+---
+
+### 9.2 AI-Powered Yield Prediction
+
+Using historical crop data + external weather API integration:
+
+- When a farmer enters their crop type, land size, and location, the system runs a **yield prediction model** and shows an estimated harvest range (e.g., "Based on past seasons and current weather in Musanze, your maize farm is estimated to yield 2.2–2.8 tonnes").
+- This prediction is shown to investors on the project detail screen as an AI confidence indicator.
+- The model is updated after each completed harvest to improve accuracy.
+
+**Tech:** On-device lightweight model via Google ML Kit for basic predictions; server-side inference via superbase Functions + OpenAI API for advanced analysis.
+
+---
+
+### 9.3 Smart Fraud Detection
+
+The platform shall run automated checks at three critical points:
+
+**At project submission:**
+- GPS coordinates cross-referenced with satellite imagery API (check land type is actually agricultural)
+- Duplicate land detection (same GPS coordinates used in multiple active projects by different farmers)
+- Farming pattern analysis (unusually high return promises flagged for manual review)
+
+**During funding phase:**
+- Investor account velocity checks (abnormal investment patterns)
+- Self-investment prevention (farmer cannot invest in their own project)
+
+**At harvest submission:**
+- Yield reasonableness check (flagged if yield is 3x higher than prediction)
+- Harvest revenue plausibility check (flagged if sale price is far outside market rates)
+
+All flagged items are surfaced to admin for review before payouts are processed.
+
+---
+
+### 9.4 Multi-Language & Localization
+
+- **Kinyarwanda (default):** Full UI translation, including all form labels, error messages, notifications, and onboarding content.
+- **English:** Full UI translation.
+- **French:** Full UI translation.
+- Language selection available at onboarding and changeable in Settings at any time.
+- All number formatting adapts to locale (RWF currency format, date formats).
+- Voice note transcription (future roadmap) shall support Kinyarwanda.
+
+---
+
+### 9.5 Interactive Project Map View
+
+In addition to the list view, the Investor marketplace shall include a **Map View** tab:
+- All active projects displayed as crop-type icons pinned on a Google Map of Rwanda.
+- Tapping a pin opens a mini project card with a "View Details" CTA.
+- Map clusters automatically when zoomed out (e.g., "12 projects in Musanze").
+- Map layers: toggle between Satellite view and Terrain view.
+
+---
+
+### 9.6 Seasonal Calendar & Planning Tool
+
+**For Farmers:** An in-app agricultural calendar showing:
+- Rwanda's Season A, B, C planting and harvest windows
+- Custom milestones they set for their own projects
+- Reminders to post farm updates (configurable frequency)
+- Market price tracker for common crops (pulled from an external agricultural data API)
+
+---
+
+## 10. SECURITY & COMPLIANCE
+
+### 10.1 Data Privacy
+- The platform shall comply with Rwanda's **Law No. 058/2021 on the Protection of Personal Data and Privacy**.
+- All users must explicitly consent to data collection and usage at registration.
+- Users can request data export (all their personal data in JSON format) and account deletion at any time from Settings.
+
+### 10.2 Financial Compliance
+- The platform operates under the oversight of the **National Bank of Rwanda (BNR)** regulations for digital payment service providers.
+- All transactions are recorded with full audit trails accessible to regulators upon request.
+- KYC verification is mandatory for any user transacting above a defined threshold.
+
+### 10.3 Security Measures Summary
+- HTTPS/TLS 1.3 for all data in transit
+- AES-256 encryption for data at rest (national IDs, financial records)
+- End-to-end encryption for all chat messages (Signal Protocol or equivalent)
+- Certificate pinning in the Flutter app
+- 6-digit transaction PIN (hashed with bcrypt, never stored in plain text)
+- Biometric authentication as a second factor
+- Account lockout after 5 failed attempts
+- Server-side rate limiting on all sensitive endpoints (OTP, login, invest)
+- Regular penetration testing (minimum twice per year)
+
+---
+
+## 11. THIRD-PARTY INTEGRATIONS
+
+| Integration | Purpose | Provider |
+|---|---|---|
+| SMS OTP | Phone number verification | Africa's Talking or Vonage |
+| Mobile Money | Deposits & withdrawals | MTN MoMo API, Airtel Money API |
+| Payment Processing | Card & bank transfers | Flutterwave |
+| Push Notifications | Real-time alerts | superbase Cloud Messaging |
+| Maps & Geocoding | Project location + map view | Google Maps Platform |
+| Weather Data | AI yield prediction input | OpenWeatherMap API |
+| Satellite Imagery | Fraud detection land verification | Google Earth Engine or Sentinel Hub |
+| Agricultural Market Prices | Crop price tracker for farmers | Rwanda Agriculture Board data feed |
+| Crash Reporting | App stability monitoring | Sentry or superbase Crashlytics |
+| Analytics | User behavior and funnel analysis | superbase Analytics + Mixpanel |
+
+---
+
+## 12. OFFLINE-FIRST STRATEGY
+
+The app is architected so that farmers in rural areas with poor or no connectivity can continue using the app meaningfully.
+
+**What works fully offline:**
+- Viewing all previously loaded projects (farmer and investor)
+- Reading all chat messages that have been loaded
+- Composing draft farm updates (saved locally, synced when online)
+- Viewing wallet balance and transaction history (last synced state)
+- Accessing all project documents and photos (cached locally)
+
+**What requires connectivity:**
+- Submitting new projects or updates (queued and auto-sent when online)
+- Making investments or withdrawals
+- Sending or receiving new chat messages
+- Loading new marketplace projects not yet in cache
+
+**Connectivity Indicators:**
+- Persistent non-blocking banner: "You are offline. Some features are limited."
+- Banner turns green: "Back online. Syncing your data…"
+- Queued actions show a pending indicator with count (e.g., "2 updates waiting to sync")
+
+**Sync Strategy:**
+- Uses Isar or Hive for local data persistence
+- Background sync via WorkManager (Android) and BGTaskScheduler (iOS)
+- Conflict resolution: server state always wins for financial data; local state wins for draft content
+
+---
+
+## 13. AI & AUTOMATION LAYER
+
+| AI Feature | Trigger | Output |
+|---|---|---|
+| Yield Prediction | Project creation | Estimated yield range shown to farmer + investors |
+| Fraud Risk Score | Project submission | Risk flag surfaced to admin if score > threshold |
+| Smart Reply Suggestions | Chat screen | 3 contextual quick reply options based on conversation history |
+| Investment Recommendation | Investor opens marketplace | "Based on your portfolio, you may like..." project suggestions |
+| Return Forecast | Investor portfolio screen | Projected return date and amount based on harvest timeline |
+| Crop Health Alert | Satellite imagery analysis | Alert to farmer and investors if satellite data suggests crop stress |
+
+---
+
+## 14. MONETIZATION & BUSINESS LOGIC
+
+### 14.1 Revenue Streams
+
+**Platform Commission (Primary):** A configurable % of investor returns (e.g., 5%) charged at payout. This is deducted automatically before crediting investors.
+
+**Farmer Subscription (Secondary):** Farmers with more than 3 active projects simultaneously pay a small monthly plan fee for a "Pro Farmer" tier with higher photo upload limits and featured placement.
+
+**Premium Investor Tier:** Investors unlock advanced analytics, early project access, and detailed farm reports for a monthly fee.
+
+**B2B Data Insights (Future):** Aggregated, anonymized crop yield and pricing data sold to agricultural organizations, insurers, and government bodies.
+
+### 14.2 Return Calculation Logic
+```
+Investor Share % = Investor Amount / Total Project Funding Goal × 100
+Expected Return = Investor Amount × (1 + Project Expected Return %)
+Actual Return = Harvest Revenue × Investor Share % − Platform Fee
+Net Return to Investor = Actual Return (credited to wallet)
+```
+
+### 14.3 Escrow Logic
+- Investor funds are held in a per-project escrow account.
+- Funds are released to the farmer **only** when funding reaches 100%.
+- If a project is cancelled or fails to fund by deadline, all escrow funds are returned in full automatically within 24 hours.
+- Harvest payouts require Admin approval before release to prevent fraud.
+
+---
+
+## 15. TESTING REQUIREMENTS
+
+### 15.1 Unit Testing
+- All business logic (return calculations, share %, fee deductions) must have 100% unit test coverage.
+- All use cases in the Domain Layer must have corresponding unit tests.
+
+### 15.2 Widget Testing
+- All screens must have basic widget tests validating that key UI elements render correctly.
+
+### 15.3 Integration Testing
+- Full E2E flows to be tested: Registration → Project Creation → Verification → Investment → Harvest Submission → Payout.
+- Payment gateway integration tested with sandbox environments before production deployment.
+
+### 15.4 Performance Testing
+- Marketplace with 500+ projects simulated to validate scroll performance and load times.
+- Concurrent investment simulation (100 simultaneous investments on same project) to validate escrow atomicity.
+
+### 15.5 User Acceptance Testing (UAT)
+- Minimum 20 real farmers and 20 real investors in a closed beta before public launch.
+- Dedicated UAT in Kinyarwanda language to catch localization errors.
+- Cell Leader verification flow tested with 5 real Cell Leaders from Musanze district.
+
+---
+
+## 16. APPENDIX & GLOSSARY
+
+| Term | Definition |
+|---|---|
+| P2P | Peer-to-Peer — direct financial transactions between individuals without a central bank |
+| Cell Leader | Rwanda's lowest administrative unit leader who acts as the community verifier on the platform |
+| Escrow | A neutral holding account where investor funds are safely kept until project funding goals are met |
+| KYC | Know Your Customer — identity verification process required for financial compliance |
+| RWF | Rwandan Franc — the primary currency of the platform |
+| Season A / B / C | Rwanda's three agricultural growing seasons per calendar year |
+| Trust Score | A platform-specific reputation metric (0–100) reflecting a user's reliability and track record |
+| Pro-Rata | Proportional distribution of returns based on each investor's share of total funding |
+| BNR | Banque Nationale du Rwanda — Rwanda's central bank and financial regulator |
+| MTN MoMo | MTN Mobile Money — Rwanda's dominant mobile payment platform |
+| Isar / Hive | Flutter-compatible embedded databases used for offline data persistence |
+| Riverpod | A reactive state management library for Flutter |
+| Clean Architecture | A software design pattern that separates UI, business logic, and data concerns into distinct layers |
+
+---
+
+*This SRS represents the complete, advanced specification for Umusaruro P2P. Every section is designed to give your Flutter development team, UI/UX designers, backend engineers, and potential investors a thorough, unambiguous, and inspiring picture of what this platform is, what it does, and how it should be built to the highest standard.*
+
+---
+
+That is the full, complete, and enhanced SRS for **Umusaruro P2P**. Here's a quick summary of what makes it stand out:
+
+It covers all three user roles in full depth, a complete 16-module feature spec with numbered requirements (so developers can track them directly), a real data model with all entities and fields, a full screen map for navigation design, advanced features like AI yield prediction, fraud detection, satellite land verification, and a trust score system, plus offline-first architecture, security and compliance with Rwanda's specific laws (BNR, data protection law), and a full monetization and business logic section including the exact return calculation formula.
+
+You can take this directly into Figma for design, hand it to a Flutter developer as a build spec, or present it to investors as a product document. Want me to also generate a Flutter project folder structure or a full AI prompt version of this for use with a code-generation tool?

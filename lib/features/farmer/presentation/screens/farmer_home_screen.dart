@@ -10,6 +10,7 @@ import 'package:umusaruro_p2p/core/widgets/status_badge.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 
 class FarmerHomeScreen extends ConsumerStatefulWidget {
   const FarmerHomeScreen({super.key});
@@ -25,11 +26,33 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
     FlSpot(0, 0), FlSpot(1, 0), FlSpot(2, 0), FlSpot(3, 0), FlSpot(4, 0), FlSpot(5, 0),
   ];
 
+  List<MockProject> _myProjects = [];
+  bool _isLoadingProjects = true;
+
   @override
   void initState() {
     super.initState();
     _fetchLiveStats();
     _fetchProfile();
+    _fetchMyProjects();
+  }
+
+  Future<void> _fetchMyProjects() async {
+    try {
+      final projects = await ref.read(projectApiServiceProvider).getMyProjects();
+      if (mounted) {
+        setState(() {
+          _myProjects = projects;
+          _isLoadingProjects = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingProjects = false;
+        });
+      }
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -87,7 +110,7 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final myProjects = mockProjects.take(3).toList();
+    final myProjects = _myProjects.take(3).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -432,6 +455,7 @@ class _QuickAction extends StatelessWidget {
               style: AppTextStyles.caption,
               textAlign: TextAlign.center,
               maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +23,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _fullName = 'Loading...';
   String _role = '';
   String _location = 'Not provided';
+  String _kycStatus = 'PENDING';
   String _email = '';
 
   @override
@@ -37,7 +40,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final response = await _supabase
           .from('users')
-          .select('full_name, role, location')
+          .select('full_name, role, location, kyc_status')
           .eq('id', currentUserId)
           .maybeSingle();
 
@@ -46,6 +49,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _fullName = response['full_name'] as String? ?? 'Unknown';
           _role = (response['role'] as String? ?? '').replaceAll('_', ' ');
           _location = response['location'] as String? ?? 'Not provided';
+          _kycStatus = response['kyc_status'] as String? ?? 'PENDING';
         });
       }
     } catch (e) {
@@ -97,6 +101,199 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  void _showKYCDialog() {
+    File? kycFront;
+    File? kycBack;
+    bool kycSubmitted = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => Container(
+          padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.verified_user, color: AppColors.primary, size: 28),
+                  const SizedBox(width: 10),
+                  Text('KYC Verification', style: AppTextStyles.headingSmall),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Upload your Front and Back National ID or Passport to verify your investor account.',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              if (kycSubmitted) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.success.withAlpha(50)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: AppColors.success, size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Documents Uploaded!', style: AppTextStyles.labelLarge.copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text('Your identity verification is currently being reviewed. This usually takes 1-2 hours.', style: AppTextStyles.bodySmall),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ] else ...[
+                const Text('Front Side of ID card', style: AppTextStyles.labelLarge),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () async {
+                    final result = await FilePicker.pickFiles(type: FileType.image, withData: false);
+                    final path = result?.files.single.path;
+                    if (path != null) {
+                      setDialogState(() => kycFront = File(path));
+                    }
+                  },
+                  child: Container(
+                    height: 100,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: kycFront != null
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                '📷 ${kycFront!.path.split('\\').last}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined, color: AppColors.textHint, size: 24),
+                              SizedBox(height: 4),
+                              Text('Select Front Image', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Back Side of ID card', style: AppTextStyles.labelLarge),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () async {
+                    final result = await FilePicker.pickFiles(type: FileType.image, withData: false);
+                    final path = result?.files.single.path;
+                    if (path != null) {
+                      setDialogState(() => kycBack = File(path));
+                    }
+                  },
+                  child: Container(
+                    height: 100,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: kycBack != null
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                '📷 ${kycBack!.path.split('\\').last}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined, color: AppColors.textHint, size: 24),
+                              SizedBox(height: 4),
+                              Text('Select Back Image', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: kycFront != null && kycBack != null
+                        ? () async {
+                            final currentUserId = _supabase.auth.currentUser?.id;
+                            if (currentUserId != null) {
+                              try {
+                                await _supabase
+                                    .from('users')
+                                    .update({'kyc_status': 'PENDING'})
+                                    .eq('id', currentUserId);
+                                _fetchProfile();
+                              } catch (e) {
+                                debugPrint('Error updating KYC: $e');
+                              }
+                            }
+                            setDialogState(() {
+                              kycSubmitted = true;
+                            });
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Submit Verification Documents', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final initials = _fullName.isNotEmpty && _fullName != 'Loading...'
@@ -134,16 +331,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: 4),
                   Text(_email, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textHint)),
                   const SizedBox(height: 8),
-                  Container(
+                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.statusActive,
+                      color: _kycStatus == 'VERIFIED'
+                          ? AppColors.statusActive
+                          : _kycStatus == 'PENDING'
+                              ? Colors.orange.withOpacity(0.15)
+                              : AppColors.error.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '✓ Verified',
+                      _kycStatus == 'VERIFIED'
+                          ? '✓ Verified'
+                          : _kycStatus == 'PENDING'
+                              ? '⌛ Pending Verification'
+                              : '✗ Rejected',
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.statusActiveText,
+                        color: _kycStatus == 'VERIFIED'
+                            ? AppColors.statusActiveText
+                            : _kycStatus == 'PENDING'
+                                ? Colors.orange[800]
+                                : AppColors.error,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -164,6 +373,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   );
                   if (updated == true) _fetchProfile();
                 },
+              ),
+              _MenuItem(
+                icon: Icons.verified_user_outlined,
+                label: 'Investor KYC Verification',
+                onTap: _showKYCDialog,
               ),
               _MenuItem(
                 icon: Icons.lock_outline,

@@ -25,7 +25,7 @@ class _CellLeaderHomeScreenState extends ConsumerState<CellLeaderHomeScreen> {
   }
 
   void _reload() {
-    _projectsFuture = ref.read(projectApiServiceProvider).getMyProjects();
+    _projectsFuture = ref.read(projectApiServiceProvider).getAllProjects();
   }
 
   Future<void> _approveProject(MockProject project) async {

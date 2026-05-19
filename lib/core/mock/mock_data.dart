@@ -12,6 +12,8 @@ class MockProject {
   final int durationMonths;
   final String status;
   final IconData imageIcon;
+  final double? latitude;
+  final double? longitude;
 
   const MockProject({
     required this.id,
@@ -25,6 +27,8 @@ class MockProject {
     required this.durationMonths,
     required this.status,
     required this.imageIcon,
+    this.latitude,
+    this.longitude,
   });
 
   double get fundingPercent => (raisedAmount / targetAmount).clamp(0, 1);

@@ -105,6 +105,44 @@ class ProjectApiService {
     }
   }
 
+  Future<void> submitHarvest(String id, double quantity, double price) async {
+    try {
+      await _supabase.from('projects').update({
+        'status': 'completed',
+        // Optional: you could save revenue here if the table had a field for it
+      }).eq('id', id);
+    } catch (e) {
+      debugPrint('Error submitting harvest: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> investInProject(String projectId, double amount) async {
+    try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) throw Exception('Not logged in');
+
+      // Insert investment record
+      await _supabase.from('investments').insert({
+        'project_id': projectId,
+        'investor_id': currentUserId,
+        'amount': amount,
+        'status': 'active',
+      });
+
+      // Update project current_amount
+      final projectData = await _supabase.from('projects').select('current_amount').eq('id', projectId).single();
+      final currentAmount = (projectData['current_amount'] as num?)?.toDouble() ?? 0;
+      await _supabase.from('projects').update({
+        'current_amount': currentAmount + amount,
+      }).eq('id', projectId);
+
+    } catch (e) {
+      debugPrint('Error investing in project: $e');
+      rethrow;
+    }
+  }
+
   MockProject _mapToMockProject(Map<String, dynamic> json) {
     final userMap = json['users'] as Map<String, dynamic>?;
     final farmerName = userMap?['full_name'] as String? ?? 'Unknown';
@@ -122,6 +160,8 @@ class ProjectApiService {
       durationMonths: (json['duration_months'] as num? ?? 6).toInt(),
       status: json['status'] as String? ?? 'funding',
       imageIcon: _iconForCrop(json['category'] as String? ?? ''),
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
     );
   }
 

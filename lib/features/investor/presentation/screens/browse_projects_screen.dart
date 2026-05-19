@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
@@ -23,6 +25,7 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
   String _searchQuery = '';
   List<MockProject> _allProjects = [];
   bool _isLoading = true;
+  bool _isMapView = false;
 
   @override
   void initState() {
@@ -67,6 +70,13 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Browse Projects'),
+        actions: [
+          IconButton(
+            icon: Icon(_isMapView ? Icons.list_alt : Icons.map_outlined),
+            onPressed: () => setState(() => _isMapView = !_isMapView),
+            tooltip: _isMapView ? 'Show List' : 'Show Map',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(
@@ -146,19 +156,168 @@ class _BrowseProjectsScreenState extends ConsumerState<BrowseProjectsScreen> {
                             ],
                           ),
                         )
-                      : RefreshIndicator(
-                          onRefresh: _loadProjects,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _filtered.length,
-                            itemBuilder: (context, index) {
-                              return _ProjectCard(project: _filtered[index]);
-                            },
-                          ),
-                        ),
+                      : _isMapView
+                          ? FlutterMap(
+                              options: const MapOptions(
+                                initialCenter: LatLng(-1.9403, 29.8739),
+                                initialZoom: 8.5,
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.umusaruro.mobile',
+                                ),
+                                MarkerLayer(
+                                  markers: _filtered
+                                      .map((p) {
+                                        // If project lacks real GPS coordinates, pin near Kigali/Musanze/Huye based on location string
+                                        double lat = p.latitude ?? -1.9403;
+                                        double lng = p.longitude ?? 29.8739;
+                                        if (p.latitude == null || p.longitude == null) {
+                                          if (p.location.toLowerCase().contains('musanze')) {
+                                            lat = -1.5008; lng = 29.6350;
+                                          } else if (p.location.toLowerCase().contains('huye')) {
+                                            lat = -2.5967; lng = 29.7394;
+                                          } else if (p.location.toLowerCase().contains('nyamagabe')) {
+                                            lat = -2.4833; lng = 29.4333;
+                                          } else if (p.location.toLowerCase().contains('rwamagana')) {
+                                            lat = -1.9500; lng = 30.4333;
+                                          } else if (p.location.toLowerCase().contains('nyamasheke')) {
+                                            lat = -2.1833; lng = 29.1333;
+                                          } else if (p.location.toLowerCase().contains('bugesera')) {
+                                            lat = -2.1383; lng = 30.2227;
+                                          }
+                                        }
+
+                                        return Marker(
+                                          point: LatLng(lat, lng),
+                                          width: 50,
+                                          height: 50,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              showModalBottomSheet(
+                                                context: context,
+                                                builder: (ctx) => _ProjectMapPopup(project: p),
+                                              );
+                                            },
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: Colors.white, width: 2),
+                                                boxShadow: const [
+                                                  BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                                                ],
+                                              ),
+                                              child: Icon(p.imageIcon, color: Colors.white, size: 22),
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                      .toList(),
+                                ),
+                              ],
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _loadProjects,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _filtered.length,
+                                itemBuilder: (context, index) {
+                                  return _ProjectCard(project: _filtered[index]);
+                                },
+                              ),
+                            ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ProjectMapPopup extends StatelessWidget {
+  final MockProject project;
+  const _ProjectMapPopup({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(project.imageIcon, color: AppColors.primary, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(project.title, style: AppTextStyles.labelLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(project.farmerName, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ROI', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                  Text('${project.returnRate.toStringAsFixed(0)}% return', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Duration', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                  Text('${project.durationMonths} months', style: AppTextStyles.labelLarge),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Location', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                  Text(project.location.split(',').first, style: AppTextStyles.labelLarge),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/investor/projects/${project.id}');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('View Project Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -13,7 +13,7 @@ class AppRoutes {
   static const String farmerHome = '/farmer/home';
   static const String myProjects = '/farmer/projects';
   static const String projectDetailFarmer = '/farmer/projects/:id';
-  static const String createProject = '/farmer/projects/create';
+  static const String createProject = '/farmer/project-create';
   static const String editProject = '/farmer/projects/:id/edit';
   static const String submitHarvest = '/farmer/projects/:id/harvest';
   static const String transactionsFarmer = '/farmer/transactions';
@@ -34,5 +34,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String messages = '/messages';
   static const String profile = '/profile';
+  static const String investorMessages = '/investor/messages';
+  static const String investorProfile = '/investor/profile';
   static const String helpSupport = '/help';
 }

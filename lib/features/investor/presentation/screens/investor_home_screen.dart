@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:umusaruro_p2p/core/constants/app_routes.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
@@ -29,12 +30,30 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
     BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 0, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
   ];
   double _totalInvested = 0; // used for chart scale
+  int _activeCount = 0;
+  int _completedCount = 0;
+
+  List<MockProject> _activeProjects = [];
 
   @override
   void initState() {
     super.initState();
     _fetchLiveStats();
     _fetchProfile();
+    _fetchProjects();
+  }
+
+  Future<void> _fetchProjects() async {
+    try {
+      final projects = await ref.read(projectApiServiceProvider).getAllProjects();
+      if (mounted) {
+        setState(() {
+          _activeProjects = projects.where((p) => p.status == 'ACTIVE' || p.status == 'active' || p.status == 'funding').toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching projects: $e');
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -65,17 +84,27 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
 
       final response = await _supabase
           .from('investments')
-          .select('amount')
+          .select('*, projects(*)')
           .eq('investor_id', currentUserId);
 
       double total = 0;
+      int active = 0;
+      int completed = 0;
       for (var row in response as List) {
         total += (row['amount'] as num).toDouble();
+        final status = row['projects']?['status'] as String? ?? 'active';
+        if (status.toLowerCase() == 'completed') {
+          completed++;
+        } else {
+          active++;
+        }
       }
 
       if (!mounted) return;
       setState(() {
         _totalInvested = total;
+        _activeCount = active;
+        _completedCount = completed;
         _chartData = [
           BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: total * 0.1, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
           BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: total * 0.25, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
@@ -92,9 +121,6 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeProjects =
-        mockProjects.where((p) => p.status == 'active').toList();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: OfflineBanner(
@@ -147,7 +173,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                                 ),
                               ),
                               Text(
-                                'RWF 1,800,000',
+                                _totalInvested >= 1000 ? 'RWF ${(_totalInvested / 1000).toStringAsFixed(0)}K' : 'RWF ${_totalInvested.toStringAsFixed(0)}',
                                 style: AppTextStyles.displayMedium.copyWith(
                                   color: Colors.white,
                                 ),
@@ -195,25 +221,25 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Portfolio summary
-                    const Row(
+                    Row(
                       children: [
                         _StatCard(
                           label: 'Active\nInvestments',
-                          value: '2',
+                          value: '$_activeCount',
                           icon: Icons.trending_up,
                           color: AppColors.primary,
                         ),
-                        SizedBox(width: 12),
-                        _StatCard(
+                        const SizedBox(width: 12),
+                        const _StatCard(
                           label: 'Avg Return',
-                          value: '20%',
+                          value: '18%',
                           icon: Icons.percent,
                           color: AppColors.secondary,
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         _StatCard(
                           label: 'Completed',
-                          value: '1',
+                          value: '$_completedCount',
                           icon: Icons.check_circle_outline,
                           color: AppColors.success,
                         ),
@@ -310,7 +336,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
 
             SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
-                final p = activeProjects[index];
+                final p = _activeProjects[index];
                 return Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -318,7 +344,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                   ),
                   child: _ProjectCard(project: p),
                 );
-              }, childCount: activeProjects.length.clamp(0, 3)),
+              }, childCount: _activeProjects.length.clamp(0, 3)),
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

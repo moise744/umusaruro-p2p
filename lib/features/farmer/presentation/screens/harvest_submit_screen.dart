@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
+import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
@@ -48,11 +49,24 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
   Future<void> _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _isLoading = false;
-      _submitted = true;
-    });
+    try {
+      final qty = double.tryParse(_quantityController.text) ?? 0;
+      final price = double.tryParse(_priceController.text) ?? 0;
+      await ref.read(projectApiServiceProvider).submitHarvest(widget.project.id, qty, price);
+      
+      if (!mounted) return;
+      setState(() {
+        _submitted = true;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _mockAddPhoto() async {
