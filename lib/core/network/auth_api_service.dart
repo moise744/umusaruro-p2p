@@ -22,18 +22,40 @@ class AuthApiService {
         password: password,
       );
 
-      // Fetch role from the users table
+      final userId = response.user?.id;
+
+      // Check if profile exists in public.users
       final userResponse = await _supabase
           .from('users')
-          .select('role')
-          .eq('email', email)
+          .select('role, full_name')
+          .eq('id', userId ?? '')
           .maybeSingle();
+
+      // ── Auto-heal: user exists in auth but not in public.users ──
+      // This happens if registration email confirmation blocked the insert.
+      if (userResponse == null && userId != null) {
+        await _supabase.from('users').insert({
+          'id': userId,
+          'email': email,
+          'password_hash': 'managed_by_supabase',
+          'full_name': email.split('@').first, // use email prefix as fallback name
+          'role': 'farmer',
+          'location': 'Not provided',
+          'is_verified': true,
+        });
+
+        return AuthSession(
+          token: response.session?.accessToken,
+          role: 'farmer',
+          message: 'Signed in successfully.',
+        );
+      }
 
       final role = userResponse?['role'] as String?;
 
       return AuthSession(
         token: response.session?.accessToken,
-        role: role ?? 'farmer', // Default fallback
+        role: role ?? 'farmer',
         message: 'Signed in successfully.',
       );
     } on AuthException catch (e) {
@@ -62,23 +84,23 @@ class AuthApiService {
         throw Exception('User creation failed');
       }
 
-      // 2. Insert into users table
-      await _supabase.from('users').insert({
+      // 2. Insert into users table — upsert to avoid duplicate errors
+      await _supabase.from('users').upsert({
         'id': userId,
         'email': email,
         'password_hash': 'managed_by_supabase',
         'full_name': fullName,
         'role': _normalizeRole(role) ?? 'farmer',
         'location': 'Not provided',
-        'is_verified': true, 
+        'is_verified': true,
       });
 
-      // 3. Insert Dummy Data so charts have history
+      // 3. Insert a starter project for farmers so chart has data
       if (role.toLowerCase() == 'farmer') {
         await _supabase.from('projects').insert({
           'farmer_id': userId,
           'title': 'Initial Farm Expansion',
-          'description': 'Automatically created project to show chart history.',
+          'description': 'Starter project created at registration.',
           'category': 'Vegetables',
           'target_amount': 500000,
           'current_amount': 150000,
@@ -86,14 +108,9 @@ class AuthApiService {
           'duration_months': 6,
           'risk_level': 'Low',
         });
-      } else if (role.toLowerCase() == 'investor') {
-        // Need a dummy project ID to invest in, but for stats we just need the investment amount
-        // Wait, investment requires project_id. Let's omit inserting dummy investment if project_id is strictly required.
-        // Actually, if we just want chart history, they'll see 0 until they invest.
-        // But let's insert a dummy project to link it to.
       }
 
-      // 4. Send Welcome Email
+      // 4. Send Welcome Email (non-blocking)
       EmailService().sendWelcomeEmail(email, fullName);
 
       return AuthSession(
@@ -109,9 +126,7 @@ class AuthApiService {
   }
 
   String? _normalizeRole(String? role) {
-    if (role == null || role.isEmpty) {
-      return null;
-    }
+    if (role == null || role.isEmpty) return null;
     return role.toLowerCase();
   }
 }

@@ -271,27 +271,44 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Land Document'),
-                subtitle: Text(
-                  _landDocument?.path.split('\\').last ?? 'Optional',
-                ),
-                trailing: OutlinedButton(
-                  onPressed: _pickDocument,
-                  child: const Text('Pick File'),
-                ),
+              // Land Document picker
+              const Text('Land Document', style: AppTextStyles.labelLarge),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _landDocument?.path.split('\\').last ?? 'No file chosen (Optional)',
+                      style: AppTextStyles.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: _pickDocument,
+                    child: const Text('Pick File'),
+                  ),
+                ],
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Project Image'),
-                subtitle: Text(
-                  _projectImage?.path.split('\\').last ?? 'Optional',
-                ),
-                trailing: OutlinedButton(
-                  onPressed: _pickProjectImage,
-                  child: const Text('Pick Image'),
-                ),
+              const SizedBox(height: 16),
+              // Project Image picker
+              const Text('Project Image', style: AppTextStyles.labelLarge),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _projectImage?.path.split('\\').last ?? 'No image chosen (Optional)',
+                      style: AppTextStyles.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: _pickProjectImage,
+                    child: const Text('Pick Image'),
+                  ),
+                ],
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
