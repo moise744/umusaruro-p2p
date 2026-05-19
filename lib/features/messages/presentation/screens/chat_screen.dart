@@ -129,6 +129,33 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// Ensures the logged-in auth user has a row in public.users.
+  /// This fixes the FK violation: sender_id not present in users table.
+  Future<void> _ensureUserProfile(String myId) async {
+    try {
+      final existing = await _supabase
+          .from('users')
+          .select('id')
+          .eq('id', myId)
+          .maybeSingle();
+      if (existing == null) {
+        final email = _supabase.auth.currentUser?.email ?? '';
+        await _supabase.from('users').insert({
+          'id': myId,
+          'email': email,
+          'password_hash': 'managed_by_supabase',
+          'full_name': email.split('@').first,
+          'role': 'farmer',
+          'location': 'Not provided',
+          'is_verified': true,
+        });
+        debugPrint('Auto-created missing user profile for $myId');
+      }
+    } catch (e) {
+      debugPrint('Could not ensure user profile: $e');
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -136,6 +163,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final myId = _supabase.auth.currentUser?.id;
     if (myId == null) return;
+
+    // Ensure the user profile exists BEFORE inserting the message
+    await _ensureUserProfile(myId);
 
     try {
       await _supabase.from('messages').insert({
@@ -145,6 +175,14 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (e) {
       debugPrint('Error sending message: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -169,14 +207,19 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.receiverName,
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.receiverName,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-                const Text('tap here for info',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
+                  const Text('tap here for info',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
             ),
           ],
         ),
