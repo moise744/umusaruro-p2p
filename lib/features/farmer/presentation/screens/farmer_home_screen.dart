@@ -83,12 +83,12 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
 
       final response = await _supabase
           .from('projects')
-          .select('current_amount')
+          .select('funding_raised')
           .eq('farmer_id', currentUserId);
 
       double total = 0;
       for (var row in response as List) {
-        total += (row['current_amount'] as num).toDouble();
+        total += (row['funding_raised'] as num? ?? 0).toDouble();
       }
 
       if (!mounted) return;
@@ -140,32 +140,39 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Muraho, $_firstName',
-                                    style: AppTextStyles.headingLarge.copyWith(
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        'Muraho, $_firstName',
+                                        style: AppTextStyles.headingLarge.copyWith(
+                                          color: Colors.white,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.handshake,
                                       color: Colors.white,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.handshake,
-                                    color: Colors.white,
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                'Musanze, Northern Province',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.white70,
+                                  ],
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  'Musanze, Northern Province',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           GestureDetector(
                             onTap: () => context.push(AppRoutes.notifications),
                             child: Stack(
@@ -469,7 +476,7 @@ class _FarmerProjectCard extends StatelessWidget {
   const _FarmerProjectCard({required this.project});
 
   ProjectStatus get _status {
-    switch (project.status) {
+    switch (project.status.toLowerCase()) {
       case 'active':
         return ProjectStatus.active;
       case 'completed':

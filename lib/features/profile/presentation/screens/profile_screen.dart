@@ -40,7 +40,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final response = await _supabase
           .from('users')
-          .select('full_name, role, location, kyc_status')
+          .select('full_name, role, location_district, kyc_status')
           .eq('id', currentUserId)
           .maybeSingle();
 
@@ -48,7 +48,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         setState(() {
           _fullName = response['full_name'] as String? ?? 'Unknown';
           _role = (response['role'] as String? ?? '').replaceAll('_', ' ');
-          _location = response['location'] as String? ?? 'Not provided';
+          _location = response['location_district'] as String? ?? 'Not provided';
           _kycStatus = response['kyc_status'] as String? ?? 'PENDING';
         });
       }

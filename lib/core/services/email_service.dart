@@ -22,7 +22,7 @@ class EmailService {
           <h2>Password Reset Request</h2>
           <p>Hello,</p>
           <p>We received a request to reset your password for Umusaruro P2P.</p>
-          <p>Your password reset code is: <strong>\$resetCode</strong></p>
+          <p>Your password reset code is: <strong>$resetCode</strong></p>
           <p>If you did not request this, please ignore this email.</p>
           <br>
           <p>Best regards,<br>The Umusaruro Team</p>
@@ -31,11 +31,11 @@ class EmailService {
 
     try {
       final sendReport = await send(message, smtpServer);
-      print('Message sent: \${sendReport.toString()}');
+      print('Message sent: ${sendReport.toString()}');
     } on MailerException catch (e) {
-      print('Message not sent. \\n\${e.toString()}');
+      print('Message not sent. \n${e.toString()}');
       for (var p in e.problems) {
-        print('Problem: \${p.code}: \${p.msg}');
+        print('Problem: ${p.code}: ${p.msg}');
       }
       throw Exception('Failed to send email');
     }
@@ -50,7 +50,7 @@ class EmailService {
       ..subject = 'Welcome to Umusaruro P2P!'
       ..html = '''
         <div style="font-family: sans-serif; padding: 20px;">
-          <h2>Welcome aboard, \$name!</h2>
+          <h2>Welcome aboard, $name!</h2>
           <p>Thank you for registering on the Umusaruro P2P platform.</p>
           <p>We are thrilled to have you join our community of farmers and investors working together to revolutionize agriculture in Rwanda.</p>
           <p>If you have any questions, feel free to reach out to our support team.</p>
@@ -62,7 +62,7 @@ class EmailService {
     try {
       await send(message, smtpServer);
     } catch (e) {
-      print('Welcome email failed (non-critical): \$e');
+      print('Welcome email failed (non-critical): $e');
     }
   }
 }

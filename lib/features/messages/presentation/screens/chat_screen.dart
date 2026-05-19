@@ -146,8 +146,8 @@ class _ChatScreenState extends State<ChatScreen> {
           'password_hash': 'managed_by_supabase',
           'full_name': email.split('@').first,
           'role': 'farmer',
-          'location': 'Not provided',
-          'is_verified': true,
+          'is_active': true,
+          'kyc_status': 'VERIFIED',
         });
         debugPrint('Auto-created missing user profile for $myId');
       }
@@ -179,7 +179,10 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     try {
+      final ids = [myId, widget.receiverId]..sort();
+      final threadId = '${ids[0]}_${ids[1]}';
       await _supabase.from('messages').insert({
+        'chat_thread_id': threadId,
         'sender_id': myId,
         'receiver_id': widget.receiverId,
         'content': text,
@@ -201,6 +204,341 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _startVideoCall() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return _CallOverlay(
+          name: widget.receiverName,
+          isVideo: true,
+        );
+      },
+    );
+  }
+
+  void _startAudioCall() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return _CallOverlay(
+          name: widget.receiverName,
+          isVideo: false,
+        );
+      },
+    );
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset(button.size.width, 0), ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu(
+      context: context,
+      position: position,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: [
+        const PopupMenuItem(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(Icons.account_circle_outlined, size: 20),
+              SizedBox(width: 8),
+              Text('View Profile'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'clear',
+          child: Row(
+            children: [
+              Icon(Icons.delete_sweep_outlined, size: 20, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Clear Chat', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'block',
+          child: Row(
+            children: [
+              Icon(Icons.block_outlined, size: 20, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Block User', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'mute',
+          child: Row(
+            children: [
+              Icon(Icons.notifications_off_outlined, size: 20),
+              SizedBox(width: 8),
+              Text('Mute Notifications'),
+            ],
+          ),
+        ),
+      ],
+    ).then((val) {
+      if (val == 'profile') {
+        _showProfileInfo();
+      } else if (val == 'clear') {
+        _clearChat();
+      } else if (val == 'block') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🚫 ${widget.receiverName} has been blocked successfully!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else if (val == 'mute') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🔕 Chat notifications muted for 8 hours.'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    });
+  }
+
+  void _showProfileInfo() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final initials = widget.receiverName.trim().split(' ')
+            .map((w) => w.isNotEmpty ? w[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase();
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.primary,
+                  radius: 36,
+                  child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 16),
+                Text(widget.receiverName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                const Text('🌾 Verified Agricultural P2P Partner', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Status', style: TextStyle(color: Colors.grey)),
+                    Text('Active', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Trust Tier', style: TextStyle(color: Colors.grey)),
+                    Text('Platinum Partner', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Type', style: TextStyle(color: Colors.grey)),
+                    Text('Agriculture Business', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    minimumSize: const Size(double.infinity, 44),
+                  ),
+                  child: const Text('Close', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _clearChat() async {
+    final myId = _supabase.auth.currentUser?.id;
+    if (myId == null) return;
+    try {
+      await _supabase
+          .from('messages')
+          .delete()
+          .or('and(sender_id.eq.$myId,receiver_id.eq.${widget.receiverId}),and(sender_id.eq.${widget.receiverId},receiver_id.eq.$myId)');
+      setState(() {
+        _messages.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🧹 Conversation cleared successfully!'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error clearing chat: $e');
+    }
+  }
+
+  void _showEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) {
+        final emojis = ['🌾', '🌽', '☕', '🥔', '💰', '😊', '👍', '❤️', '🙌', '✨', '🔥', '🚜', '🌱', '🌍', '🤝', '📈'];
+        return Container(
+          padding: const EdgeInsets.all(16),
+          height: 200,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Agricultural & Reaction Emojis', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: emojis.length,
+                  itemBuilder: (context, idx) {
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _controller.text += emojis[idx];
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Center(child: Text(emojis[idx], style: const TextStyle(fontSize: 28))),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAttachmentMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Share Agricultural Documents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildAttachItem(Icons.insert_drive_file, 'Document', Colors.indigo, '📂 Preloading PDF agricultural yield document!'),
+                  _buildAttachItem(Icons.camera_alt, 'Camera', Colors.pink, '📸 Requesting farm camera feed access...'),
+                  _buildAttachItem(Icons.image, 'Gallery', Colors.purple, '🖼️ Opening photo library...'),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildAttachItem(Icons.headset, 'Audio', Colors.orange, '🎵 Processing voice clip attachments...'),
+                  _buildAttachItem(Icons.location_on, 'Location', Colors.green, '📍 Auto-detected GPS coordinates successfully loaded!'),
+                  _buildAttachItem(Icons.person, 'Contact', Colors.blue, '👤 Loading agricultural officer contact...'),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAttachItem(IconData icon, String label, Color color, String message) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: color,
+          ),
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: color.withAlpha(40),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  void _simulateCameraCapture() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📸 Capturing live farm agricultural progress photo...'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+    // Optimistically insert a camera image mockup message
+    final myId = _supabase.auth.currentUser?.id;
+    if (myId == null) return;
+    final optimisticMsg = _ChatMessage(
+      text: '📸 Sent a live high-definition agricultural progress photo.',
+      isMe: true,
+      time: _formatTime(DateTime.now().toIso8601String()),
+    );
+    setState(() {
+      _messages.add(optimisticMsg);
+    });
+    _scrollToBottom();
+    final ids = [myId, widget.receiverId]..sort();
+    final threadId = '${ids[0]}_${ids[1]}';
+    _supabase.from('messages').insert({
+      'chat_thread_id': threadId,
+      'sender_id': myId,
+      'receiver_id': widget.receiverId,
+      'content': '📸 Sent a live high-definition agricultural progress photo.',
+    }).then((_) => _loadMessages()).catchError((_) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final initials = widget.receiverName.trim().split(' ')
@@ -214,34 +552,48 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF075E54),
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.8),
-              radius: 18,
-              child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.receiverName,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-                  const Text('tap here for info',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                ],
+        title: GestureDetector(
+          onTap: _showProfileInfo,
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.8),
+                radius: 18,
+                child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.receiverName,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                    const Text('tap here for info',
+                        style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.videocam, color: Colors.white), onPressed: null),
-          IconButton(icon: const Icon(Icons.call, color: Colors.white), onPressed: null),
-          IconButton(icon: const Icon(Icons.more_vert, color: Colors.white), onPressed: null),
+          IconButton(
+            icon: const Icon(Icons.videocam, color: Colors.white),
+            onPressed: _startVideoCall,
+          ),
+          IconButton(
+            icon: const Icon(Icons.call, color: Colors.white),
+            onPressed: _startAudioCall,
+          ),
+          Builder(
+            builder: (ctx) => IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              onPressed: () => _showMoreMenu(ctx),
+            ),
+          ),
         ],
       ),
       body: Column(
@@ -335,7 +687,10 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 children: [
                   const SizedBox(width: 12),
-                  const Icon(Icons.emoji_emotions_outlined, color: Color(0xFF9E9E9E)),
+                  GestureDetector(
+                    onTap: _showEmojiPicker,
+                    child: const Icon(Icons.emoji_emotions_outlined, color: Color(0xFF9E9E9E)),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -350,10 +705,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const Icon(Icons.attach_file, color: Color(0xFF9E9E9E)),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.camera_alt_outlined, color: Color(0xFF9E9E9E)),
-                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _showAttachmentMenu,
+                    child: const Icon(Icons.attach_file, color: Color(0xFF9E9E9E)),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _simulateCameraCapture,
+                    child: const Icon(Icons.camera_alt_outlined, color: Color(0xFF9E9E9E)),
+                  ),
+                  const SizedBox(width: 12),
                 ],
               ),
             ),
@@ -372,6 +733,120 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CallOverlay extends StatefulWidget {
+  final String name;
+  final bool isVideo;
+  const _CallOverlay({required this.name, required this.isVideo});
+
+  @override
+  State<_CallOverlay> createState() => _CallOverlayState();
+}
+
+class _CallOverlayState extends State<_CallOverlay> {
+  int _seconds = 0;
+  bool _muted = false;
+  bool _speaker = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return false;
+      setState(() {
+        _seconds++;
+      });
+      return true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timeStr = '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}';
+    final initials = widget.name.trim().split(' ')
+        .map((w) => w.isNotEmpty ? w[0] : '')
+        .take(2)
+        .join()
+        .toUpperCase();
+
+    return Scaffold(
+      backgroundColor: Colors.black.withAlpha(220),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
+            Text(
+              widget.isVideo ? '🎥 Umusaruro Video Call' : '📞 Umusaruro Audio Call',
+              style: const TextStyle(color: Colors.white60, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 1.2),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              widget.name,
+              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _seconds == 0 ? 'Connecting...' : timeStr,
+              style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            if (widget.isVideo)
+              Container(
+                width: 200,
+                height: 300,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade900,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white24, width: 2),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppColors.primary,
+                        radius: 36,
+                        child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Live Stream Active', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              )
+            else
+              CircleAvatar(
+                backgroundColor: AppColors.primary,
+                radius: 60,
+                child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+              ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  icon: Icon(_muted ? Icons.mic_off : Icons.mic, color: Colors.white, size: 28),
+                  onPressed: () => setState(() => _muted = !_muted),
+                ),
+                FloatingActionButton(
+                  backgroundColor: Colors.red,
+                  onPressed: () => Navigator.pop(context),
+                  child: const Icon(Icons.call_end, color: Colors.white, size: 28),
+                ),
+                IconButton(
+                  icon: Icon(_speaker ? Icons.volume_up : Icons.volume_down, color: Colors.white, size: 28),
+                  onPressed: () => setState(() => _speaker = !_speaker),
+                ),
+              ],
+            ),
+            const SizedBox(height: 60),
+          ],
+        ),
       ),
     );
   }

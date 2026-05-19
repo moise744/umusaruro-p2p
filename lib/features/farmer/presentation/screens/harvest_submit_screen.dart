@@ -179,10 +179,13 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Estimated Total Revenue',
-                        style: AppTextStyles.labelLarge,
+                      const Expanded(
+                        child: Text(
+                          'Estimated Total Revenue',
+                          style: AppTextStyles.labelLarge,
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         _formatAmount(_totalRevenue),
                         style: AppTextStyles.headingSmall.copyWith(
@@ -397,7 +400,7 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
               const SizedBox(height: 40),
               PrimaryButton(
                 label: 'Back to My Projects',
-                onPressed: () => context.push('/farmer/projects'),
+                onPressed: () => context.go('/farmer/projects'),
               ),
             ],
           ),

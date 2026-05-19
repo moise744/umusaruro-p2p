@@ -126,12 +126,14 @@ void main() async {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         chat_thread_id VARCHAR(255) NOT NULL,
         sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id UUID REFERENCES users(id) ON DELETE CASCADE,
         content_type VARCHAR(50) DEFAULT 'TEXT',
         content TEXT NOT NULL,
         media_url TEXT,
         duration_seconds INT,
         status VARCHAR(50) DEFAULT 'SENT',
-        sent_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+        sent_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
       );
     ''');
     print('Messages table created.');

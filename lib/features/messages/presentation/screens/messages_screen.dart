@@ -29,7 +29,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
       final response = await _supabase
           .from('users')
-          .select('id, full_name, role, location')
+          .select('id, full_name, role')
           .neq('id', currentUserId ?? '');
 
       if (mounted) {

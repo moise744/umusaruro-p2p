@@ -67,19 +67,19 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       // Investments made by user (investor)
       final investments = await _supabase
           .from('investments')
-          .select('*, projects(title, category)')
+          .select('*, projects(title, crop_type)')
           .eq('investor_id', userId)
-          .order('created_at', ascending: false);
+          .order('invested_at', ascending: false);
 
       for (final inv in investments as List) {
         final project = inv['projects'] as Map<String, dynamic>?;
         result.add(_Transaction(
           id: inv['id'] as String,
           title: 'Investment — ${project?['title'] ?? 'Project'}',
-          subtitle: project?['category'] ?? 'Agriculture',
-          amount: (inv['amount'] as num).toDouble(),
+          subtitle: project?['crop_type'] ?? 'Agriculture',
+          amount: (inv['amount_invested'] as num).toDouble(),
           isCredit: false,
-          date: _formatDate(inv['created_at'] as String),
+          date: _formatDate(inv['invested_at'] as String),
           type: TransactionType.investment,
           status: inv['status'] as String? ?? 'active',
         ));
@@ -88,13 +88,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       // Projects funded (farmer receiving money)
       final projects = await _supabase
           .from('projects')
-          .select('id, title, current_amount, status, created_at')
+          .select('id, title, funding_raised, status, created_at')
           .eq('farmer_id', userId)
-          .gt('current_amount', 0)
+          .gt('funding_raised', 0)
           .order('created_at', ascending: false);
 
       for (final p in projects as List) {
-        final raised = (p['current_amount'] as num).toDouble();
+        final raised = (p['funding_raised'] as num).toDouble();
         if (raised > 0) {
           result.add(_Transaction(
             id: 'proj_${p['id']}',

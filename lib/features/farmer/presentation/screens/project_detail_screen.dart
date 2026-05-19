@@ -162,15 +162,24 @@ class ProjectDetailScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              project.farmerName,
-                              style: AppTextStyles.labelLarge,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '· Verified Farmer',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.success,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      project.farmerName,
+                                      style: AppTextStyles.labelLarge,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '· Verified',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.success,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -427,7 +436,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                           label: 'Funding Phase',
                           detail: 'Collecting investments from backers',
                           isCompleted: project.fundingPercent > 0,
-                          isActive: project.status == 'active',
+                          isActive: project.status.toLowerCase() == 'active',
                         ),
                         _TimelineTile(
                           label: 'Planting Phase',
@@ -444,7 +453,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                         _TimelineTile(
                           label: 'Harvest & Returns',
                           detail: 'Harvest certified — investors paid',
-                          isCompleted: project.status == 'completed',
+                          isCompleted: project.status.toLowerCase() == 'completed',
                           isActive: false,
                           isLast: true,
                         ),
@@ -453,7 +462,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color:
-                                project.status == 'active'
+                                project.status.toLowerCase() == 'active'
                                     ? AppColors.statusActive
                                     : AppColors.offlineBanner,
                             borderRadius: BorderRadius.circular(12),
@@ -461,11 +470,11 @@ class ProjectDetailScreen extends ConsumerWidget {
                           child: Row(
                             children: [
                               Icon(
-                                project.status == 'active'
+                                project.status.toLowerCase() == 'active'
                                     ? Icons.verified_user
                                     : Icons.hourglass_top_rounded,
                                 color:
-                                    project.status == 'active'
+                                    project.status.toLowerCase() == 'active'
                                         ? AppColors.success
                                         : AppColors.warning,
                                 size: 20,
@@ -476,18 +485,18 @@ class ProjectDetailScreen extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      project.status == 'active'
+                                      project.status.toLowerCase() == 'active'
                                           ? 'Verified'
                                           : 'Pending verification',
                                       style: AppTextStyles.labelLarge.copyWith(
                                         color:
-                                            project.status == 'active'
+                                            project.status.toLowerCase() == 'active'
                                                 ? AppColors.success
                                                 : AppColors.warning,
                                       ),
                                     ),
                                     Text(
-                                      project.status == 'active'
+                                      project.status.toLowerCase() == 'active'
                                           ? 'Approved by Cell Leader'
                                           : 'Waiting for cell leader approval',
                                       style: AppTextStyles.caption,
@@ -516,7 +525,7 @@ class ProjectDetailScreen extends ConsumerWidget {
   }
 
   ProjectStatus _projectStatus(String status) {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'active':
         return ProjectStatus.active;
       case 'completed':
@@ -672,7 +681,7 @@ class _InvestorBottomBar extends StatelessWidget {
         label: 'Invest Now',
         icon: Icons.trending_up,
         onPressed:
-            project.status == 'active'
+            project.status.toLowerCase() == 'active'
                 ? () => context.push(
                   '/investor/projects/${project.id}/invest',
                   extra: project,
@@ -708,7 +717,7 @@ class _FarmerBottomBar extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () {
                 // Navigate to messages, pick a user to chat with
-                context.push('/messages');
+                context.go('/messages');
               },
               icon: const Icon(Icons.chat_bubble_outline),
               label: const Text('Messages'),
@@ -719,7 +728,7 @@ class _FarmerBottomBar extends StatelessWidget {
             child: PrimaryButton(
               label: 'Submit Harvest',
               onPressed:
-                  project.status == 'active'
+                  project.status.toLowerCase() == 'active'
                       ? () => context.push(
                         '/farmer/projects/${project.id}/harvest',
                         extra: project,

@@ -12,7 +12,7 @@ class ProjectApiService {
 
       final response = await _supabase
           .from('projects')
-          .select('*, users!farmer_id(full_name, location)')
+          .select('*, users!farmer_id(full_name, location_district)')
           .eq('farmer_id', currentUserId)
           .order('created_at', ascending: false);
       return (response as List).map((json) => _mapToMockProject(json)).toList();
@@ -26,7 +26,7 @@ class ProjectApiService {
     try {
       final response = await _supabase
           .from('projects')
-          .select('*, users!farmer_id(full_name, location)')
+          .select('*, users!farmer_id(full_name, location_district)')
           .order('created_at', ascending: false);
       return (response as List).map((json) => _mapToMockProject(json)).toList();
     } catch (e) {
@@ -39,7 +39,7 @@ class ProjectApiService {
     try {
       final response = await _supabase
           .from('projects')
-          .select('*, users!farmer_id(full_name, location)')
+          .select('*, users!farmer_id(full_name, location_district)')
           .eq('id', id)
           .single();
       return _mapToMockProject(response);
@@ -69,27 +69,23 @@ class ProjectApiService {
       final currentUserId = _supabase.auth.currentUser?.id;
       if (currentUserId == null) throw Exception('Not logged in');
 
-      final cropType = projectType != null && projectType.trim().isNotEmpty ? projectType.trim() : 'Crop';
-      final locationParts = <String>[
-        if (sector != null && sector.isNotEmpty) sector,
-        if (district != null && district.isNotEmpty) district,
-        if (province != null && province.isNotEmpty) province,
-      ];
-      final finalLocation = locationParts.isNotEmpty ? locationParts.join(', ') : location;
-
+      final cropType = projectType != null && projectType.trim().isNotEmpty ? projectType.trim() : 'MAIZE';
+      
       await _supabase.from('projects').insert({
         'farmer_id': currentUserId,
         'title': title,
-        'description': description,
-        'category': cropType,
-        'target_amount': capitalNeeded ?? 0,
-        'current_amount': 0,
-        'status': 'funding',
-        'return_rate': 15.0,
-        'duration_months': 6,
-        'risk_level': 'Medium',
-        'latitude': latitude,
-        'longitude': longitude,
+        'crop_type': cropType.toUpperCase(),
+        'season': 'A',
+        'verification_note': description,
+        'funding_goal': capitalNeeded ?? 0.0,
+        'funding_raised': 0.0,
+        'expected_return_percent': 15.0,
+        'status': 'PENDING_VERIFICATION',
+        'location_district': district ?? 'Musanze',
+        'location_sector': sector ?? 'Busogo',
+        'location_cell': cell ?? 'Ruhengeri',
+        'gps_lat': latitude ?? -1.503,
+        'gps_lng': longitude ?? 29.635,
       });
     } catch (e) {
       debugPrint('Error creating project: $e');
@@ -99,7 +95,7 @@ class ProjectApiService {
 
   Future<void> approveProject(String id) async {
     try {
-      await _supabase.from('projects').update({'status': 'active'}).eq('id', id);
+      await _supabase.from('projects').update({'status': 'ACTIVE'}).eq('id', id);
     } catch (e) {
       debugPrint('Error approving project: $e');
     }
@@ -108,8 +104,9 @@ class ProjectApiService {
   Future<void> submitHarvest(String id, double quantity, double price) async {
     try {
       await _supabase.from('projects').update({
-        'status': 'completed',
-        // Optional: you could save revenue here if the table had a field for it
+        'status': 'COMPLETED',
+        'harvest_yield_kg': quantity,
+        'harvest_revenue': price * quantity,
       }).eq('id', id);
     } catch (e) {
       debugPrint('Error submitting harvest: $e');
@@ -126,15 +123,15 @@ class ProjectApiService {
       await _supabase.from('investments').insert({
         'project_id': projectId,
         'investor_id': currentUserId,
-        'amount': amount,
-        'status': 'active',
+        'amount_invested': amount,
+        'status': 'ACTIVE',
       });
 
-      // Update project current_amount
-      final projectData = await _supabase.from('projects').select('current_amount').eq('id', projectId).single();
-      final currentAmount = (projectData['current_amount'] as num?)?.toDouble() ?? 0;
+      // Update project funding_raised
+      final projectData = await _supabase.from('projects').select('funding_raised').eq('id', projectId).single();
+      final currentAmount = (projectData['funding_raised'] as num?)?.toDouble() ?? 0;
       await _supabase.from('projects').update({
-        'current_amount': currentAmount + amount,
+        'funding_raised': currentAmount + amount,
       }).eq('id', projectId);
 
     } catch (e) {
@@ -146,22 +143,22 @@ class ProjectApiService {
   MockProject _mapToMockProject(Map<String, dynamic> json) {
     final userMap = json['users'] as Map<String, dynamic>?;
     final farmerName = userMap?['full_name'] as String? ?? 'Unknown';
-    final location = userMap?['location'] as String? ?? 'Rwanda';
+    final location = userMap?['location_district'] as String? ?? 'Musanze';
 
     return MockProject(
       id: json['id'] as String,
       title: json['title'] as String,
       farmerName: farmerName,
-      cropType: json['category'] as String? ?? 'Crop',
+      cropType: json['crop_type'] as String? ?? 'Crop',
       location: location,
-      targetAmount: (json['target_amount'] as num? ?? 0).toDouble(),
-      raisedAmount: (json['current_amount'] as num? ?? 0).toDouble(),
-      returnRate: (json['return_rate'] as num? ?? 0).toDouble(),
-      durationMonths: (json['duration_months'] as num? ?? 6).toInt(),
-      status: json['status'] as String? ?? 'funding',
-      imageIcon: _iconForCrop(json['category'] as String? ?? ''),
-      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
-      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      targetAmount: (json['funding_goal'] as num? ?? 0).toDouble(),
+      raisedAmount: (json['funding_raised'] as num? ?? 0).toDouble(),
+      returnRate: (json['expected_return_percent'] as num? ?? 0).toDouble(),
+      durationMonths: 6,
+      status: json['status'] as String? ?? 'DRAFT',
+      imageIcon: _iconForCrop(json['crop_type'] as String? ?? ''),
+      latitude: json['gps_lat'] != null ? (json['gps_lat'] as num).toDouble() : null,
+      longitude: json['gps_lng'] != null ? (json['gps_lng'] as num).toDouble() : null,
     );
   }
 
@@ -172,7 +169,8 @@ class ProjectApiService {
       case 'avocado':
         return Icons.local_florist;
       case 'potatoes':
-      case 'irish potato':
+      case 'potato':
+      case 'potatoes':
         return Icons.agriculture;
       case 'rice':
         return Icons.grass;

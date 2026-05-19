@@ -34,9 +34,12 @@ import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 import 'package:umusaruro_p2p/core/screens/transactions_screen.dart';
 part 'app_router.g.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 @riverpod
 GoRouter appRouter(Ref ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     routes: [

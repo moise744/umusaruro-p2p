@@ -34,14 +34,22 @@ class AuthApiService {
       // ── Auto-heal: user exists in auth but not in public.users ──
       // This happens if registration email confirmation blocked the insert.
       if (userResponse == null && userId != null) {
+        // Delete any orphaned/stale profiles with the same email to avoid unique key conflicts
+        try {
+          await _supabase
+              .from('users')
+              .delete()
+              .eq('email', email);
+        } catch (_) {}
+
         await _supabase.from('users').insert({
           'id': userId,
           'email': email,
           'password_hash': 'managed_by_supabase',
           'full_name': email.split('@').first, // use email prefix as fallback name
           'role': 'farmer',
-          'location': 'Not provided',
-          'is_verified': true,
+          'is_active': true,
+          'kyc_status': 'VERIFIED',
         });
 
         return AuthSession(
@@ -84,15 +92,22 @@ class AuthApiService {
         throw Exception('User creation failed');
       }
 
-      // 2. Insert into users table — upsert to avoid duplicate errors
+      // 2. Insert into users table — clean up stale duplicates by email first, then upsert
+      try {
+        await _supabase
+            .from('users')
+            .delete()
+            .eq('email', email);
+      } catch (_) {}
+
       await _supabase.from('users').upsert({
         'id': userId,
         'email': email,
         'password_hash': 'managed_by_supabase',
         'full_name': fullName,
         'role': _normalizeRole(role) ?? 'farmer',
-        'location': 'Not provided',
-        'is_verified': true,
+        'is_active': true,
+        'kyc_status': 'VERIFIED',
       });
 
       // 3. Insert a starter project for farmers so chart has data
@@ -100,13 +115,11 @@ class AuthApiService {
         await _supabase.from('projects').insert({
           'farmer_id': userId,
           'title': 'Initial Farm Expansion',
-          'description': 'Starter project created at registration.',
-          'category': 'Vegetables',
-          'target_amount': 500000,
-          'current_amount': 150000,
-          'return_rate': 12.0,
-          'duration_months': 6,
-          'risk_level': 'Low',
+          'crop_type': 'MAIZE',
+          'funding_goal': 500000.0,
+          'funding_raised': 150000.0,
+          'expected_return_percent': 12.0,
+          'status': 'ACTIVE',
         });
       }
 

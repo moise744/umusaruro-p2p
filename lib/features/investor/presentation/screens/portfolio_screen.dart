@@ -39,13 +39,13 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           .from('investments')
           .select('*, projects(*)')
           .eq('investor_id', userId)
-          .order('created_at', ascending: false);
+          .order('invested_at', ascending: false);
 
       double total = 0;
       final List<Map<String, dynamic>> list = [];
       for (final row in res as List) {
         final investment = Map<String, dynamic>.from(row);
-        final amt = (investment['amount'] as num).toDouble();
+        final amt = (investment['amount_invested'] as num).toDouble();
         total += amt;
         list.add(investment);
       }
@@ -261,7 +261,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      'RWF ${_formatCurrency((inv['amount'] as num).toDouble())}',
+                                      'RWF ${_formatCurrency((inv['amount_invested'] as num).toDouble())}',
                                       style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
                                     ),
                                     const SizedBox(height: 2),
@@ -300,7 +300,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
     for (final inv in _investments) {
       final project = inv['projects'] as Map<String, dynamic>?;
       final crop = project?['crop_type'] as String? ?? 'Other';
-      final amt = (inv['amount'] as num).toDouble();
+      final amt = (inv['amount_invested'] as num).toDouble();
       cropShares[crop] = (cropShares[crop] ?? 0) + amt;
     }
 

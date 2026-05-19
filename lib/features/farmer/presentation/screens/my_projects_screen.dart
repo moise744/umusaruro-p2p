@@ -28,7 +28,7 @@ class _MyProjectsScreenState extends ConsumerState<MyProjectsScreen> {
 
   List<MockProject> _filter(List<MockProject> projects, String status) {
     if (status == 'all') return projects;
-    return projects.where((project) => project.status == status).toList();
+    return projects.where((project) => project.status.toLowerCase() == status.toLowerCase()).toList();
   }
 
   @override
@@ -139,7 +139,7 @@ class _ProjectCard extends StatelessWidget {
   const _ProjectCard({required this.project});
 
   ProjectStatus get _status {
-    switch (project.status) {
+    switch (project.status.toLowerCase()) {
       case 'active':
         return ProjectStatus.active;
       case 'completed':

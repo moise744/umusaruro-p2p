@@ -38,12 +38,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final response = await _supabase
           .from('users')
-          .select('full_name, location')
+          .select('full_name, location_district')
           .eq('id', userId)
           .maybeSingle();
       if (response != null && mounted) {
         _nameController.text = response['full_name'] as String? ?? '';
-        _locationController.text = response['location'] as String? ?? '';
+        _locationController.text = response['location_district'] as String? ?? '';
       }
     } catch (e) {
       debugPrint('Error loading profile: $e');
@@ -60,7 +60,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final userId = _supabase.auth.currentUser?.id;
       await _supabase.from('users').update({
         'full_name': _nameController.text.trim(),
-        'location': _locationController.text.trim(),
+        'location_district': _locationController.text.trim(),
       }).eq('id', userId!);
 
       if (mounted) {

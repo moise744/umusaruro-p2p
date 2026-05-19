@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:umusaruro_p2p/core/constants/app_routes.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
@@ -42,6 +44,40 @@ class _CellLeaderHomeScreenState extends ConsumerState<CellLeaderHomeScreen> {
         title: const Text('Cell Leader Review'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirm Logout'),
+                  content: const Text('Are you sure you want to log out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true) {
+                await Supabase.instance.client.auth.signOut();
+                final secureStorage = ref.read(secureStorageServiceProvider);
+                await secureStorage.clearAll();
+                if (context.mounted) {
+                  context.go(AppRoutes.login);
+                }
+              }
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<List<MockProject>>(
         future: _projectsFuture,
@@ -63,7 +99,10 @@ class _CellLeaderHomeScreenState extends ConsumerState<CellLeaderHomeScreen> {
 
           final pendingProjects =
               (snapshot.data ?? const <MockProject>[])
-                  .where((project) => project.status == 'pending')
+                  .where((project) {
+                    final s = project.status.toLowerCase();
+                    return s == 'pending' || s == 'pending_verification';
+                  })
                   .toList();
 
           if (pendingProjects.isEmpty) {

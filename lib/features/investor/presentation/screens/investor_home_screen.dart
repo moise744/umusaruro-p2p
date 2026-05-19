@@ -91,7 +91,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
       int active = 0;
       int completed = 0;
       for (var row in response as List) {
-        total += (row['amount'] as num).toDouble();
+        total += (row['amount_invested'] as num).toDouble();
         final status = row['projects']?['status'] as String? ?? 'active';
         if (status.toLowerCase() == 'completed') {
           completed++;
