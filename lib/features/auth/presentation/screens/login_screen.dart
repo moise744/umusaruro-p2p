@@ -43,7 +43,7 @@ class _LoginNotifier extends Notifier<_LoginState> {
       state = const _LoginState(isLoading: false, error: null);
       if (!context.mounted) return;
 
-      switch (session.role) {
+      switch (session.role?.toLowerCase()) {
         case 'investor':
           context.go(AppRoutes.investorHome);
           return;

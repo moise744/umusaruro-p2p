@@ -78,7 +78,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       if (!mounted) return;
       if (session.token != null) {
-        switch (session.role) {
+        switch (session.role?.toLowerCase()) {
           case 'investor':
             context.go(AppRoutes.investorHome);
             return;

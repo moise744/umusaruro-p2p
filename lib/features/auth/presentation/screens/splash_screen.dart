@@ -42,7 +42,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       }
 
       final role = await secureStorage.getRole();
-      switch (role) {
+      switch (role?.toLowerCase()) {
         case 'farmer':
           if (mounted) context.go(AppRoutes.farmerHome);
           break;

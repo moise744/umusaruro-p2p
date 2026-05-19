@@ -316,7 +316,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
     return cropShares.entries.map((entry) {
       final color = colors[i % colors.length];
       i++;
-      final percentage = (entry.value / _totalInvested) * 100;
+      final percentage = _totalInvested > 0 ? (entry.value / _totalInvested) * 100 : 0;
       return PieChartSectionData(
         color: color,
         value: entry.value,

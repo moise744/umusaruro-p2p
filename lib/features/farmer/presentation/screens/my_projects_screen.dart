@@ -18,12 +18,19 @@ class MyProjectsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyProjectsScreenState extends ConsumerState<MyProjectsScreen> {
-  late final Future<List<MockProject>> _projectsFuture;
+  late Future<List<MockProject>> _projectsFuture;
 
   @override
   void initState() {
     super.initState();
     _projectsFuture = ref.read(projectApiServiceProvider).getMyProjects();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _projectsFuture = ref.read(projectApiServiceProvider).getMyProjects();
+    });
+    await _projectsFuture;
   }
 
   List<MockProject> _filter(List<MockProject> projects, String status) {
@@ -85,9 +92,9 @@ class _MyProjectsScreenState extends ConsumerState<MyProjectsScreen> {
               final projects = snapshot.data ?? const <MockProject>[];
               return TabBarView(
                 children: [
-                  _ProjectList(projects: _filter(projects, 'all')),
-                  _ProjectList(projects: _filter(projects, 'active')),
-                  _ProjectList(projects: _filter(projects, 'completed')),
+                  _ProjectList(projects: _filter(projects, 'all'), onRefresh: _refresh),
+                  _ProjectList(projects: _filter(projects, 'active'), onRefresh: _refresh),
+                  _ProjectList(projects: _filter(projects, 'completed'), onRefresh: _refresh),
                 ],
               );
             },
@@ -100,22 +107,27 @@ class _MyProjectsScreenState extends ConsumerState<MyProjectsScreen> {
 
 class _ProjectList extends StatelessWidget {
   final List<MockProject> projects;
+  final Future<void> Function() onRefresh;
 
-  const _ProjectList({required this.projects});
+  const _ProjectList({required this.projects, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     if (projects.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.22),
             const Icon(Icons.eco_outlined, size: 64, color: AppColors.divider),
             const SizedBox(height: 16),
-            Text(
-              'No projects yet',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
+            Center(
+              child: Text(
+                'No projects yet',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -123,12 +135,16 @@ class _ProjectList extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        return _ProjectCard(project: projects[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: projects.length,
+        itemBuilder: (context, index) {
+          return _ProjectCard(project: projects[index]);
+        },
+      ),
     );
   }
 }

@@ -34,6 +34,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
   int _completedCount = 0;
 
   List<MockProject> _activeProjects = [];
+  List<MockInvestment> _liveInvestments = [];
 
   @override
   void initState() {
@@ -90,14 +91,31 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
       double total = 0;
       int active = 0;
       int completed = 0;
+      final List<MockInvestment> liveList = [];
       for (var row in response as List) {
-        total += (row['amount_invested'] as num).toDouble();
-        final status = row['projects']?['status'] as String? ?? 'active';
+        final amt = (row['amount_invested'] as num).toDouble();
+        total += amt;
+        final project = row['projects'] as Map<String, dynamic>?;
+        final status = project?['status'] as String? ?? 'active';
         if (status.toLowerCase() == 'completed') {
           completed++;
         } else {
           active++;
         }
+
+        liveList.add(
+          MockInvestment(
+            id: row['id'] as String? ?? '',
+            projectTitle: project?['title'] as String? ?? 'Unnamed Farm',
+            cropType: project?['crop_type'] as String? ?? 'Other',
+            amount: amt,
+            returnRate: (project?['expected_return_percent'] as num?)?.toDouble() ?? 15.0,
+            status: status.toLowerCase(),
+            date: row['invested_at'] != null 
+                ? (row['invested_at'] as String).substring(0, 10) 
+                : 'Today',
+          ),
+        );
       }
 
       if (!mounted) return;
@@ -105,6 +123,7 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
         _totalInvested = total;
         _activeCount = active;
         _completedCount = completed;
+        _liveInvestments = liveList;
         _chartData = [
           BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: total * 0.1, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
           BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: total * 0.25, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
@@ -308,9 +327,37 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    ...mockInvestments
-                        .take(2)
-                        .map((inv) => _InvestmentTile(investment: inv)),
+                    if (_liveInvestments.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.pie_chart_outline, size: 48, color: AppColors.divider),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No investments yet',
+                              style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 4),
+                            TextButton(
+                              onPressed: () => context.go(AppRoutes.browseProjects),
+                              child: const Text('Browse Projects to Invest'),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ..._liveInvestments
+                          .take(2)
+                          .map((inv) => _InvestmentTile(investment: inv)),
 
                     const SizedBox(height: 24),
 

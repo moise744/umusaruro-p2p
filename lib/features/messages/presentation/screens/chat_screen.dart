@@ -230,85 +230,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showMoreMenu(BuildContext context) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset(button.size.width, 0), ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
 
-    showMenu(
-      context: context,
-      position: position,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: [
-        const PopupMenuItem(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(Icons.account_circle_outlined, size: 20),
-              SizedBox(width: 8),
-              Text('View Profile'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'clear',
-          child: Row(
-            children: [
-              Icon(Icons.delete_sweep_outlined, size: 20, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Clear Chat', style: TextStyle(color: Colors.red)),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'block',
-          child: Row(
-            children: [
-              Icon(Icons.block_outlined, size: 20, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Block User', style: TextStyle(color: Colors.red)),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'mute',
-          child: Row(
-            children: [
-              Icon(Icons.notifications_off_outlined, size: 20),
-              SizedBox(width: 8),
-              Text('Mute Notifications'),
-            ],
-          ),
-        ),
-      ],
-    ).then((val) {
-      if (val == 'profile') {
-        _showProfileInfo();
-      } else if (val == 'clear') {
-        _clearChat();
-      } else if (val == 'block') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('🚫 ${widget.receiverName} has been blocked successfully!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else if (val == 'mute') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🔕 Chat notifications muted for 8 hours.'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      }
-    });
-  }
 
   void _showProfileInfo() {
     showDialog(
@@ -588,11 +510,72 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: const Icon(Icons.call, color: Colors.white),
             onPressed: _startAudioCall,
           ),
-          Builder(
-            builder: (ctx) => IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              onPressed: () => _showMoreMenu(ctx),
-            ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (val) {
+              if (val == 'profile') {
+                _showProfileInfo();
+              } else if (val == 'clear') {
+                _clearChat();
+              } else if (val == 'block') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🚫 ${widget.receiverName} has been blocked successfully!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } else if (val == 'mute') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🔕 Chat notifications muted for 8 hours.'),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.account_circle_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('View Profile'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'clear',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_sweep_outlined, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Clear Chat', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'block',
+                child: Row(
+                  children: [
+                    Icon(Icons.block_outlined, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Block User', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'mute',
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_off_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('Mute Notifications'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
