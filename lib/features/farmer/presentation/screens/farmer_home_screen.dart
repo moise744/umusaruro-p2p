@@ -415,11 +415,20 @@ class _StatCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: AppTextStyles.headingSmall.copyWith(color: color),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: AppTextStyles.headingSmall.copyWith(color: color),
+              ),
             ),
-            Text(label, style: AppTextStyles.caption),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTextStyles.caption,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
@@ -457,12 +466,15 @@ class _QuickAction extends StatelessWidget {
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            SizedBox(
+              width: double.infinity,
+              child: Text(
+                label,
+                style: AppTextStyles.caption.copyWith(fontSize: 11),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -510,29 +522,24 @@ class _FarmerProjectCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(project.imageIcon, size: 28, color: AppColors.primary),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 180,
-                            child: Text(
-                              project.title,
-                              style: AppTextStyles.headingSmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(project.location, style: AppTextStyles.bodySmall),
-                        ],
-                      ),
-                    ],
+                  Icon(project.imageIcon, size: 28, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.title,
+                          style: AppTextStyles.headingSmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(project.location, style: AppTextStyles.bodySmall),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   StatusBadge(status: _status),
                 ],
               ),

@@ -166,38 +166,43 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Muraho, $_firstName',
-                                    style: AppTextStyles.headingLarge.copyWith(
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        'Muraho, $_firstName',
+                                        style: AppTextStyles.headingLarge.copyWith(
+                                          color: Colors.white,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.handshake,
                                       color: Colors.white,
                                     ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Portfolio value',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: Colors.white60,
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.handshake,
+                                ),
+                                Text(
+                                  _totalInvested >= 1000 ? 'RWF ${(_totalInvested / 1000).toStringAsFixed(0)}K' : 'RWF ${_totalInvested.toStringAsFixed(0)}',
+                                  style: AppTextStyles.displayMedium.copyWith(
                                     color: Colors.white,
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Portfolio value',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: Colors.white60,
                                 ),
-                              ),
-                              Text(
-                                _totalInvested >= 1000 ? 'RWF ${(_totalInvested / 1000).toStringAsFixed(0)}K' : 'RWF ${_totalInvested.toStringAsFixed(0)}',
-                                style: AppTextStyles.displayMedium.copyWith(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           GestureDetector(
                             onTap: () => context.push(AppRoutes.notifications),
@@ -435,11 +440,20 @@ class _StatCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: AppTextStyles.headingSmall.copyWith(color: color),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: AppTextStyles.headingSmall.copyWith(color: color),
+              ),
             ),
-            Text(label, style: AppTextStyles.caption, maxLines: 2),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTextStyles.caption,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
