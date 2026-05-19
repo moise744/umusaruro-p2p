@@ -297,6 +297,33 @@ class _InvestorHomeScreenState extends ConsumerState<InvestorHomeScreen> {
                           titlesData: FlTitlesData(
                             rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                             topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 45,
+                                getTitlesWidget: (value, meta) {
+                                  String formatted;
+                                  if (value >= 1000000) {
+                                    formatted = '${(value / 1000000).toStringAsFixed(1)}M';
+                                  } else if (value >= 1000) {
+                                    formatted = '${(value / 1000).toStringAsFixed(0)}K';
+                                  } else {
+                                    formatted = value.toStringAsFixed(0);
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Text(
+                                      formatted,
+                                      style: AppTextStyles.caption.copyWith(
+                                        fontSize: 9,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
