@@ -167,15 +167,30 @@ class _ChatScreenState extends State<ChatScreen> {
     // Ensure the user profile exists BEFORE inserting the message
     await _ensureUserProfile(myId);
 
+    // OPTIMISTIC: add the message to the UI immediately so user sees it now
+    final optimisticMsg = _ChatMessage(
+      text: text,
+      isMe: true,
+      time: _formatTime(DateTime.now().toIso8601String()),
+    );
+    if (mounted) {
+      setState(() => _messages.add(optimisticMsg));
+      _scrollToBottom();
+    }
+
     try {
       await _supabase.from('messages').insert({
         'sender_id': myId,
         'receiver_id': widget.receiverId,
         'content': text,
       });
+      // Reload from DB to get the real record with correct timestamp
+      await _loadMessages();
     } catch (e) {
       debugPrint('Error sending message: $e');
+      // Remove the optimistic message on failure
       if (mounted) {
+        setState(() => _messages.remove(optimisticMsg));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send: $e'),
