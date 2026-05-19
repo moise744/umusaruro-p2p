@@ -185,130 +185,133 @@ class _BrowseProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(project.imageIcon, size: 36, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        project.title,
-                        style: AppTextStyles.headingSmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'by ${project.farmerName}',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              project.location,
-                              style: AppTextStyles.caption,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+    return GestureDetector(
+      onTap: () => context.push('/investor/projects/${project.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(project.imageIcon, size: 36, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.title,
+                          style: AppTextStyles.headingSmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'by ${project.farmerName}',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: AppColors.textSecondary,
                             ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                project.location,
+                                style: AppTextStyles.caption,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '+${project.returnRate}%',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: AppColors.secondary,
                           ),
-                        ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'ROI',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textHint,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '+${project.returnRate}%',
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ROI',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            LinearPercentIndicator(
-              lineHeight: 8,
-              percent: project.fundingPercent,
-              backgroundColor: AppColors.divider,
-              progressColor: AppColors.primary,
-              barRadius: const Radius.circular(4),
-              padding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${(project.fundingPercent * 100).toStringAsFixed(0)}% of ${project.formattedTarget}',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
-                Text(
-                  '${project.durationMonths} months',
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 44)),
-                child: const Text('Invest Now'),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              LinearPercentIndicator(
+                lineHeight: 8,
+                percent: project.fundingPercent,
+                backgroundColor: AppColors.divider,
+                progressColor: AppColors.primary,
+                barRadius: const Radius.circular(4),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${(project.fundingPercent * 100).toStringAsFixed(0)}% of ${project.formattedTarget}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    '${project.durationMonths} months',
+                    style: AppTextStyles.caption,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => context.push('/investor/projects/${project.id}'),
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 44)),
+                  child: const Text('Invest Now'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

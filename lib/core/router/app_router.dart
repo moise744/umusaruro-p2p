@@ -8,6 +8,8 @@ import 'package:umusaruro_p2p/core/constants/app_routes.dart';
 import 'package:umusaruro_p2p/features/auth/presentation/screens/splash_screen.dart';
 import 'package:umusaruro_p2p/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:umusaruro_p2p/features/auth/presentation/screens/login_screen.dart';
+import 'package:umusaruro_p2p/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:umusaruro_p2p/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:umusaruro_p2p/features/auth/presentation/screens/otp_screen.dart';
 import 'package:umusaruro_p2p/features/auth/presentation/screens/register_screen.dart';
 import 'package:umusaruro_p2p/features/auth/presentation/screens/farmer_profile_setup_screen.dart';
@@ -20,6 +22,7 @@ import 'package:umusaruro_p2p/features/investor/presentation/screens/investor_ho
 import 'package:umusaruro_p2p/features/investor/presentation/screens/browse_projects_screen.dart';
 import 'package:umusaruro_p2p/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:umusaruro_p2p/features/messages/presentation/screens/messages_screen.dart';
+import 'package:umusaruro_p2p/features/messages/presentation/screens/chat_screen.dart';
 import 'package:umusaruro_p2p/features/profile/presentation/screens/profile_screen.dart';
 
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/project_detail_screen.dart';
@@ -47,6 +50,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       GoRoute(
         path: AppRoutes.otp,
@@ -158,6 +169,13 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/investor/transactions',
         builder: (context, state) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) {
+          final contactName = state.extra as String? ?? 'Chat';
+          return ChatScreen(contactName: contactName);
+        },
       ),
     ],
   );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
+import 'package:go_router/go_router.dart';
 
 class _MockConversation {
   final String name;
@@ -64,6 +65,9 @@ class MessagesScreen extends StatelessWidget {
           return Container(
             color: AppColors.surface,
             child: ListTile(
+              onTap: () {
+                context.push('/chat', extra: c.name);
+              },
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 8,

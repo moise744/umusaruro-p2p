@@ -9,6 +9,7 @@ import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
 import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
 import 'package:umusaruro_p2p/core/widgets/status_badge.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
   final String projectId;
@@ -76,14 +77,23 @@ class ProjectDetailScreen extends ConsumerWidget {
                           Icons.edit_outlined,
                           color: Colors.white,
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Edit feature coming soon'),
+                            ),
+                          );
+                        },
                       ),
                     IconButton(
                       icon: const Icon(
                         Icons.share_outlined,
                         color: Colors.white,
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        Share.share(
+                            'Check out this agricultural project: ${project.title} on Umusaruro P2P!');
+                      },
                     ),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
@@ -586,7 +596,13 @@ class _FarmerBottomBar extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Messages feature coming soon'),
+                  ),
+                );
+              },
               icon: const Icon(Icons.chat_bubble_outline),
               label: const Text('Messages'),
             ),

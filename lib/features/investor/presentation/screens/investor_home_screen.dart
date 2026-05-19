@@ -7,6 +7,7 @@ import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class InvestorHomeScreen extends ConsumerWidget {
   const InvestorHomeScreen({super.key});
@@ -139,6 +140,59 @@ class InvestorHomeScreen extends ConsumerWidget {
                           color: AppColors.success,
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Portfolio Performance Chart
+                    const Text(
+                      'Portfolio Performance',
+                      style: AppTextStyles.headingSmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 200,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: BarChart(
+                        BarChartData(
+                          gridData: FlGridData(show: false),
+                          titlesData: FlTitlesData(
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  const titles = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                                  if (value.toInt() >= 0 && value.toInt() < titles.length) {
+                                    return Text(titles[value.toInt()], style: AppTextStyles.caption);
+                                  }
+                                  return const Text('');
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          barGroups: [
+                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 8, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 10, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 14, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 15, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: 13, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 10, color: AppColors.primary, width: 16, borderRadius: BorderRadius.circular(4))]),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -326,98 +380,101 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(project.imageIcon, size: 32, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        project.title,
-                        style: AppTextStyles.headingSmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(project.farmerName, style: AppTextStyles.bodySmall),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '+${project.returnRate}%',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.secondary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearPercentIndicator(
-              lineHeight: 8,
-              percent: project.fundingPercent,
-              backgroundColor: AppColors.divider,
-              progressColor: AppColors.primaryLight,
-              barRadius: const Radius.circular(4),
-              padding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
-                Text(
-                  '${project.durationMonths} months Â· ${project.location.split(',').first}',
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(0, 40),
-                  padding: EdgeInsets.zero,
-                ),
-                child: const Text('Invest Now'),
-              ),
+    return GestureDetector(
+      onTap: () => context.push('/investor/projects/${project.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(project.imageIcon, size: 32, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.title,
+                          style: AppTextStyles.headingSmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(project.farmerName, style: AppTextStyles.bodySmall),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '+${project.returnRate}%',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              LinearPercentIndicator(
+                lineHeight: 8,
+                percent: project.fundingPercent,
+                backgroundColor: AppColors.divider,
+                progressColor: AppColors.primaryLight,
+                barRadius: const Radius.circular(4),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    '${project.durationMonths} months · ${project.location.split(',').first}',
+                    style: AppTextStyles.caption,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => context.push('/investor/projects/${project.id}'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Text('Invest Now'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

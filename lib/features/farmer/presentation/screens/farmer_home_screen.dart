@@ -8,6 +8,7 @@ import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/status_badge.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class FarmerHomeScreen extends ConsumerWidget {
   const FarmerHomeScreen({super.key});
@@ -177,6 +178,72 @@ class FarmerHomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
+                    // Statistics Chart
+                    const Text(
+                      'Monthly Revenue',
+                      style: AppTextStyles.headingSmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 200,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: LineChart(
+                        LineChartData(
+                          gridData: FlGridData(show: false),
+                          titlesData: FlTitlesData(
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  const titles = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                                  if (value.toInt() >= 0 && value.toInt() < titles.length) {
+                                    return Text(titles[value.toInt()], style: AppTextStyles.caption);
+                                  }
+                                  return const Text('');
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: const [
+                                FlSpot(0, 3),
+                                FlSpot(1, 1),
+                                FlSpot(2, 4),
+                                FlSpot(3, 2),
+                                FlSpot(4, 5),
+                                FlSpot(5, 3.5),
+                              ],
+                              isCurved: true,
+                              color: AppColors.primary,
+                              barWidth: 3,
+                              isStrokeCapRound: true,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // My Projects
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -327,76 +394,79 @@ class _FarmerProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(project.imageIcon, size: 28, color: AppColors.primary),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 180,
-                          child: Text(
-                            project.title,
-                            style: AppTextStyles.headingSmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(project.location, style: AppTextStyles.bodySmall),
-                      ],
-                    ),
-                  ],
-                ),
-                StatusBadge(status: _status),
-              ],
-            ),
-            const SizedBox(height: 16),
-            LinearPercentIndicator(
-              lineHeight: 8,
-              percent: project.fundingPercent,
-              backgroundColor: AppColors.divider,
-              progressColor: AppColors.primary,
-              barRadius: const Radius.circular(4),
-              padding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
-                Text(
-                  '${project.formattedRaised} / ${project.formattedTarget}',
-                  style: AppTextStyles.caption,
-                ),
-              ],
+    return GestureDetector(
+      onTap: () => context.push('/farmer/projects/${project.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(project.imageIcon, size: 28, color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 180,
+                            child: Text(
+                              project.title,
+                              style: AppTextStyles.headingSmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(project.location, style: AppTextStyles.bodySmall),
+                        ],
+                      ),
+                    ],
+                  ),
+                  StatusBadge(status: _status),
+                ],
+              ),
+              const SizedBox(height: 16),
+              LinearPercentIndicator(
+                lineHeight: 8,
+                percent: project.fundingPercent,
+                backgroundColor: AppColors.divider,
+                progressColor: AppColors.primary,
+                barRadius: const Radius.circular(4),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${(project.fundingPercent * 100).toStringAsFixed(0)}% funded',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    '${project.formattedRaised} / ${project.formattedTarget}',
+                    style: AppTextStyles.caption,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

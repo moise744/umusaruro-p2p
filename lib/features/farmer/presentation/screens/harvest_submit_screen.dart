@@ -7,7 +7,8 @@ import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 import 'package:umusaruro_p2p/core/widgets/primary_button.dart';
 import 'package:umusaruro_p2p/core/widgets/app_text_field.dart';
-
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 class HarvestSubmitScreen extends ConsumerStatefulWidget {
   final MockProject project;
   const HarvestSubmitScreen({super.key, required this.project});
@@ -54,10 +55,22 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
     });
   }
 
-  void _mockAddPhoto() {
-    setState(() {
-      _uploadedPhotos.add('photo_${_uploadedPhotos.length + 1}');
-    });
+  Future<void> _mockAddPhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() {
+          _uploadedPhotos.add(image.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -239,10 +252,18 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        const Icon(
-                          Icons.image,
-                          color: AppColors.primary,
-                          size: 36,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: _uploadedPhotos[index].startsWith('photo_')
+                              ? const Icon(
+                                  Icons.image,
+                                  color: AppColors.primary,
+                                  size: 36,
+                                )
+                              : Image.file(
+                                  File(_uploadedPhotos[index]),
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         Positioned(
                           top: 4,
@@ -362,7 +383,7 @@ class _HarvestSubmitScreenState extends ConsumerState<HarvestSubmitScreen> {
               const SizedBox(height: 40),
               PrimaryButton(
                 label: 'Back to My Projects',
-                onPressed: () => context.go('/farmer/projects'),
+                onPressed: () => context.push('/farmer/projects'),
               ),
             ],
           ),

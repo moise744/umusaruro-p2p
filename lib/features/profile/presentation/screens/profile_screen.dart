@@ -5,6 +5,7 @@ import 'package:umusaruro_p2p/core/constants/app_routes.dart';
 import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -69,23 +70,31 @@ class ProfileScreen extends ConsumerWidget {
                 _MenuItem(
                   icon: Icons.person_outline,
                   label: 'Edit Profile',
-                  onTap: () {},
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Edit Profile coming soon')),
+                  ),
                 ),
                 _MenuItem(
                   icon: Icons.lock_outline,
                   label: 'Security',
-                  onTap: () {},
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Security coming soon')),
+                  ),
                 ),
                 _MenuItem(
                   icon: Icons.language,
                   label: 'Language',
                   trailing: 'Kinyarwanda',
-                  onTap: () {},
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Language settings coming soon')),
+                  ),
                 ),
                 _MenuItem(
                   icon: Icons.notifications_outlined,
                   label: 'Notifications',
-                  onTap: () {},
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Notifications coming soon')),
+                  ),
                 ),
               ],
             ),
@@ -97,17 +106,36 @@ class ProfileScreen extends ConsumerWidget {
                 _MenuItem(
                   icon: Icons.help_outline,
                   label: 'Help & FAQ',
-                  onTap: () {},
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Help & FAQ coming soon')),
+                  ),
                 ),
                 _MenuItem(
                   icon: Icons.chat_bubble_outline,
                   label: 'Contact Support',
-                  onTap: () {},
+                  onTap: () async {
+                    final Uri emailLaunchUri = Uri(
+                      scheme: 'mailto',
+                      path: 'support@umusaruro.rw',
+                      query: 'subject=Support Request',
+                    );
+                    if (await canLaunchUrl(emailLaunchUri)) {
+                      await launchUrl(emailLaunchUri);
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Could not open email client')),
+                        );
+                      }
+                    }
+                  },
                 ),
                 _MenuItem(
                   icon: Icons.privacy_tip_outlined,
                   label: 'Privacy Policy',
-                  onTap: () {},
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Privacy Policy coming soon')),
+                  ),
                 ),
               ],
             ),
