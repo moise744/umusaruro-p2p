@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 
 class ProjectApiService {
-  static final List<MockProject> _projects = [...mockProjects];
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<List<MockProject>> getMyProjects() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    return List<MockProject>.unmodifiable(_projects);
+    try {
+      final response = await _supabase.from('projects').select().order('created_at', ascending: false);
+      return (response as List).map((json) => _mapToMockProject(json)).toList();
+    } catch (e) {
+      print('Error fetching projects: \$e');
+      return [];
+    }
   }
 
   Future<MockProject> getProjectById(String id) async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return _projects.firstWhere(
-      (project) => project.id == id,
-      orElse: () => mockProjects.first,
-    );
+    try {
+      final response = await _supabase.from('projects').select().eq('id', id).single();
+      return _mapToMockProject(response);
+    } catch (e) {
+      print('Error fetching project by id: \$e');
+      throw Exception('Project not found');
+    }
   }
 
   Future<void> createProject({
@@ -33,55 +41,56 @@ class ProjectApiService {
     double? capitalNeeded,
     dynamic projectImage,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    try {
+      final cropType = projectType != null && projectType.trim().isNotEmpty ? projectType.trim() : 'Crop';
+      final locationParts = <String>[
+        if (sector != null && sector.isNotEmpty) sector,
+        if (district != null && district.isNotEmpty) district,
+        if (province != null && province.isNotEmpty) province,
+      ];
+      final finalLocation = locationParts.isNotEmpty ? locationParts.join(', ') : location;
 
-    final cropType =
-        projectType != null && projectType.trim().isNotEmpty
-            ? projectType.trim()
-            : 'Crop';
-    final locationParts = <String>[
-      if (sector != null && sector.isNotEmpty) sector,
-      if (district != null && district.isNotEmpty) district,
-      if (province != null && province.isNotEmpty) province,
-    ];
-
-    _projects.insert(
-      0,
-      MockProject(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        farmerName: 'You',
-        cropType: cropType,
-        location:
-            locationParts.isNotEmpty ? locationParts.join(', ') : location,
-        targetAmount: capitalNeeded ?? 0,
-        raisedAmount: 0,
-        returnRate: 0,
-        durationMonths: 0,
-        status: 'pending',
-        imageIcon: _iconForCrop(cropType),
-      ),
-    );
+      await _supabase.from('projects').insert({
+        'title': title,
+        'description': description,
+        'category': cropType,
+        'target_amount': capitalNeeded ?? 0,
+        'status': 'pending',
+        'return_rate': 15.0, // Default for now
+        'duration_months': 6, // Default for now
+        'risk_level': 'Medium', // Default for now
+        'latitude': latitude,
+        'longitude': longitude,
+        // Optional: Assuming the user is authenticated and we have their farmer_id.
+        // For now, if no auth, this might fail unless policies are disabled.
+      });
+    } catch (e) {
+      print('Error creating project: \$e');
+      throw e;
+    }
   }
 
   Future<void> approveProject(String id) async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    final index = _projects.indexWhere((project) => project.id == id);
-    if (index == -1) return;
+    try {
+      await _supabase.from('projects').update({'status': 'active'}).eq('id', id);
+    } catch (e) {
+      print('Error approving project: \$e');
+    }
+  }
 
-    final project = _projects[index];
-    _projects[index] = MockProject(
-      id: project.id,
-      title: project.title,
-      farmerName: project.farmerName,
-      cropType: project.cropType,
-      location: project.location,
-      targetAmount: project.targetAmount,
-      raisedAmount: project.raisedAmount,
-      returnRate: project.returnRate,
-      durationMonths: project.durationMonths,
-      status: 'active',
-      imageIcon: project.imageIcon,
+  MockProject _mapToMockProject(Map<String, dynamic> json) {
+    return MockProject(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      farmerName: 'Kagabo Jean', // Assuming a join with users table could get this
+      cropType: json['category'] as String,
+      location: 'Musanze', // Or derive from lat/long if location isn't a column
+      targetAmount: (json['target_amount'] as num).toDouble(),
+      raisedAmount: (json['current_amount'] as num?)?.toDouble() ?? 0,
+      returnRate: (json['return_rate'] as num?)?.toDouble() ?? 0,
+      durationMonths: (json['duration_months'] as num?)?.toInt() ?? 0,
+      status: json['status'] as String? ?? 'funding',
+      imageIcon: _iconForCrop(json['category'] as String),
     );
   }
 

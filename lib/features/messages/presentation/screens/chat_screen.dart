@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:umusaruro_p2p/core/theme/app_colors.dart';
 import 'package:umusaruro_p2p/core/theme/app_text_styles.dart';
 
@@ -27,54 +28,35 @@ class _ChatMessage {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final _supabase = Supabase.instance.client;
   
-  final List<_ChatMessage> _messages = [
-    _ChatMessage(
-      text: 'Hello! How can I help you today?',
-      isMe: false,
-      time: '10:00 AM',
-    ),
-  ];
+  List<_ChatMessage> _messages = [];
 
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _listenToMessages();
+  }
 
-    setState(() {
-      _messages.add(
-        _ChatMessage(
-          text: text,
-          isMe: true,
-          time: TimeOfDay.now().format(context),
-        ),
-      );
-    });
-
-    _controller.clear();
-    
-    // Scroll to bottom
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-
-    // Simulate a reply if we are talking to someone
-    Future.delayed(const Duration(seconds: 1), () {
+  void _listenToMessages() {
+    _supabase
+        .from('messages')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true)
+        .listen((data) {
       if (!mounted) return;
       setState(() {
-        _messages.add(
-          _ChatMessage(
-            text: 'I received your message: "$text". I will get back to you shortly.',
-            isMe: false,
-            time: TimeOfDay.now().format(context),
-          ),
-        );
+        _messages = data.map((json) {
+          // Assuming farmer_id = f2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7f (You)
+          final isMe = json['sender_id'] == 'f2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7f';
+          return _ChatMessage(
+            text: json['content'] as String,
+            isMe: isMe,
+            time: _formatTime(json['created_at'] as String),
+          );
+        }).toList();
       });
+
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -85,6 +67,27 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       });
     });
+  }
+
+  String _formatTime(String isoString) {
+    final date = DateTime.parse(isoString).toLocal();
+    return TimeOfDay.fromDateTime(date).format(context);
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    _controller.clear();
+
+    try {
+      await _supabase.from('messages').insert({
+        'sender_id': 'f2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7f', // Logged in user
+        'receiver_id': 'a2c1b2c4-850d-4b8c-a1b4-1c9c45e82b7a', // The other user
+        'content': text,
+      });
+    } catch (e) {
+      print('Error sending message: \$e');
+    }
   }
 
   @override

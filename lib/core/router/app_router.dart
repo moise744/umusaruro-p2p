@@ -27,6 +27,7 @@ import 'package:umusaruro_p2p/features/profile/presentation/screens/profile_scre
 
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/project_detail_screen.dart';
 import 'package:umusaruro_p2p/features/farmer/presentation/screens/harvest_submit_screen.dart';
+import 'package:umusaruro_p2p/features/farmer/presentation/screens/project_location_screen.dart';
 import 'package:umusaruro_p2p/features/investor/presentation/screens/invest_flow_screen.dart';
 import 'package:umusaruro_p2p/core/mock/mock_data.dart';
 import 'package:umusaruro_p2p/core/screens/transactions_screen.dart';
@@ -169,6 +170,17 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/investor/transactions',
         builder: (context, state) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/map',
+        builder: (context, state) {
+          final data = state.extra as Map<String, dynamic>;
+          return ProjectLocationScreen(
+            latitude: data['lat'] as double,
+            longitude: data['lng'] as double,
+            title: data['title'] as String,
+          );
+        },
       ),
       GoRoute(
         path: '/chat',

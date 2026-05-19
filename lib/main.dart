@@ -11,9 +11,13 @@ import 'package:umusaruro_p2p/core/storage/secure_storage_service.dart';
 import 'package:umusaruro_p2p/core/providers/app_providers.dart';
 import 'package:umusaruro_p2p/l10n/generated/app_localizations.dart';
 import 'package:umusaruro_p2p/core/widgets/offline_banner.dart';
+import 'package:umusaruro_p2p/core/services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await SupabaseService.initialize();
+
   final localStorageService = LocalStorageService();
   final secureStorageService = SecureStorageService(
     const FlutterSecureStorage(),

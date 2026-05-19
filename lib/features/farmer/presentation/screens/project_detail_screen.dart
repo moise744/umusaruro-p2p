@@ -182,9 +182,31 @@ class ProjectDetailScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: 4),
                             Expanded(
-                              child: Text(
-                                project.location,
-                                style: AppTextStyles.bodySmall,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    project.location,
+                                    style: AppTextStyles.bodySmall,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    onTap: () {
+                                      context.push('/map', extra: {
+                                        'lat': -1.954, // Hardcoded or project.lat
+                                        'lng': 30.061, // Hardcoded or project.lng
+                                        'title': project.title,
+                                      });
+                                    },
+                                    child: const Text(
+                                      'View Map',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
